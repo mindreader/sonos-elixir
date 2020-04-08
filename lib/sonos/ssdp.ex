@@ -1,4 +1,9 @@
 defmodule Sonos.SSDP do
+
+  def rescan do
+    Sonos.SSDP.Server |> GenServer.cast(:scan)
+  end
+
   def ports do
     local_endpoints()
     |> Enum.map(fn local_ip ->
@@ -21,7 +26,7 @@ defmodule Sonos.SSDP do
     "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n"
   end
 
-  def bar(ports) when is_list(ports) do
+  def scan(ports) when is_list(ports) do
     ports
     |> Enum.map(fn port ->
       remote_endpoints()
@@ -31,8 +36,8 @@ defmodule Sonos.SSDP do
     end)
   end
 
-  def bar(port) do
-    [port] |> bar()
+  def scan(port) do
+    [port] |> scan()
   end
 
   #  def handle_info(:broadcast, state = %{conn: {addr, port, sock}}) do
