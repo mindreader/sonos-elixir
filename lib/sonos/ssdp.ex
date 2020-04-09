@@ -80,4 +80,17 @@ defmodule Sonos.SSDP do
       ip |> IO.inspect(label: "flags")
     end)
   end
+
+  def response_parse(str) do
+    str |> String.split("\r\n") |> Enum.reduce(%{}, fn
+      "HTTP/1.1 200 OK", accum -> accum
+      header, accum ->
+
+        Regex.run(~r/^([^:]+):(?: (.*))?$/, header) |> case do
+        [_, header, val] -> accum |> Map.put(header |> String.downcase(), val |> String.trim())
+        [_, header] -> accum |> Map.put(header |> String.downcase(), nil)
+        _ -> accum
+      end
+    end)
+  end
 end

@@ -1,6 +1,8 @@
 defmodule Sonos.SSDP.Server do
   use GenServer
 
+  alias Sonos
+
   defmodule State do
     defstruct ports: nil, devices: nil
   end
@@ -12,7 +14,7 @@ defmodule Sonos.SSDP.Server do
   def init(_args) do
     state = %State {
       ports: Sonos.SSDP.ports,
-      devices: []
+      devices: %{}
     }
     {:ok, state}
   end
@@ -22,14 +24,19 @@ defmodule Sonos.SSDP.Server do
     state.ports |> Sonos.SSDP.scan()
 
     state = %{ state |
-      devices: []
+      devices: %{}
     }
     {:noreply, state}
   end
 
-  def handle_info({:udp, port, ip, _something, msg}, state) do
+  def handle_info({:udp, _port, ip, _something, msg}, state) do
+
+    alias Sonos.{Device,SSDP}
+
+    device = msg |> SSDP.response_parse |> Device.from_headers(ip)
+
     state = %State { state |
-      devices: [ {port, ip, msg} | state.devices]
+      devices: state.devices |> Map.put(device.id, device)
     }
     {:noreply, state}
   end
