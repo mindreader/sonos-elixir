@@ -29,6 +29,7 @@ defmodule Sonos.SSDP.Server do
     {:noreply, state}
   end
 
+  # TODO tidy this stuff up a bit.
   def handle_info({:udp_passive, _port, ip, _something, msg}, state) do
     handle_info({:udp, _port, ip, _something, msg}, state)
   end
