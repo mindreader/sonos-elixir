@@ -29,6 +29,9 @@ defmodule Sonos.SSDP.Server do
     {:noreply, state}
   end
 
+  def handle_info({:udp_passive, _port, ip, _something, msg}, state) do
+    handle_info({:udp, _port, ip, _something, msg}, state)
+  end
   def handle_info({:udp, _port, ip, _something, msg}, state) do
 
     alias Sonos.{Device,SSDP}
