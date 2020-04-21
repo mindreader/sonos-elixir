@@ -5,7 +5,7 @@ defmodule Sonos.Router do
   plug :dispatch
 
   match _ do
-    {:ok, body, conn} = conn |> Plug.Conn.read_body() |> IO.inspect(label: "body")
+    {:ok, body, conn} = conn |> Plug.Conn.read_body()
 
     body |> IO.puts
     conn
