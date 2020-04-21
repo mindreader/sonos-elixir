@@ -1,9 +1,5 @@
 defmodule Sonos.SSDP do
 
-  def rescan do
-    Sonos.SSDP.Server |> GenServer.cast(:scan)
-  end
-
   def ports do
     local_endpoints()
     |> Enum.map(fn local_ip ->
@@ -85,11 +81,12 @@ defmodule Sonos.SSDP do
     str |> String.split("\r\n") |> Enum.reduce(%{}, fn
       "HTTP/1.1 200 OK", accum -> accum
       header, accum ->
+        header |> IO.inspect(label: "header")
 
         Regex.run(~r/^([^:]+):(?: (.*))?$/, header) |> case do
         [_, header, val] -> accum |> Map.put(header |> String.downcase(), val |> String.trim())
         [_, header] -> accum |> Map.put(header |> String.downcase(), nil)
-        _ -> accum
+          _ -> accum
       end
     end)
   end

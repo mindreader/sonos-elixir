@@ -7,12 +7,11 @@ defmodule Sonos.Supervisor do
 
   def init(_args) do
     [
-      Sonos.SSDP.Server,
+      Sonos.Server,
       Plug.Cowboy.child_spec(scheme: :http, plug: Sonos.Router, port: 4001)
     ]
     |> Supervisor.init(
       strategy: :one_for_one,
-      name: __MODULE__
     )
   end
 end
