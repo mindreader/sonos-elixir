@@ -11,10 +11,10 @@ There are also features I wish it supported that it doesn't.  Right now the spea
 ## So far
 
 * Discover speakers on your internal network without requiring you to configure your ip address.
+* Basic pause / play / skip functionality
 
 ## Roadmap
 
-* Basic pause / play / skip functionality
 * Volume control
 * Periodically rediscover and remove non responsive speakers.
 * Subscribe to speakers and monitor their current states
