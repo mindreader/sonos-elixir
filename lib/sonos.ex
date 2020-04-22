@@ -15,14 +15,18 @@ defmodule Sonos do
   end
 
   def identify_all do
-    devices() |> Task.async_stream(fn %Device{} = dev ->
-      dev |> Device.identify |> case do
+    devices()
+    |> Task.async_stream(&identify/1, ordered: false, on_timeout: :kill_task)
+    |> Stream.run
+  end
+
+  def identify(%Device{} = dev) do
+    dev |> Device.identify |> case do
       {:ok, desc} ->
         dev |> identify_device(desc)
       err ->
         Logger.debug("Failed to identify a device #{err}")
-      end
-    end, ordered: false, on_timeout: :kill_task) |> Stream.run
+    end
   end
 
   def identify_device(%Device{} = dev, %Device.Description{} = desc) do

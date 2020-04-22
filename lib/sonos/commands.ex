@@ -1,7 +1,5 @@
 defmodule Sonos.Commands do
-  defmodule Command do
-    defstruct action: nil, body: nil
-  end
+  require Logger
 
   # /MediaRenderer/AVTransport/Control - play / stop / seek / playlists
   # /MediaRenderer/Queue/Control - control the queue
@@ -23,54 +21,119 @@ defmodule Sonos.Commands do
   # /MediaRenderer/ConnectionManager/Control - connection manager?
   # /MediaServer/ConnectionManager/Control - connection manager?
 
-  def play2 do
-    %Command{
-      action: "urn:schemas-upnp-org:service:AVTransport:1#Play",
-      body:
-        "<u:Play xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"><InstanceID>0</InstanceID><Speed>1</Speed></u:Play>"
-    }
+  def play(%Sonos.Device{} = device, speed \\ 1) do
+    device
+    |> avtransport_control("Play", InstanceID: 0, Speed: speed)
+    |> case do
+      {:ok, _res} -> :ok
+    end
   end
 
-  def play(%Sonos.Device{} = device) do
-    Sonos.Soap.Request.new("AVTransport", "Play", [InstanceID: 0])
+  def pause(%Sonos.Device{} = device) do
+    device
+    |> avtransport_control("Pause", InstanceID: 0)
+    |> case do
+      {:ok, _res} ->
+        :ok
+
+      {:error, {:upnp_error, 701}} ->
+        # most likely tried to pause something that wasn't playing.
+        Logger.debug("Tried to pause something that wasn't playing (error 701)")
+        :ok
+
+      err ->
+        err
+    end
+  end
+
+  def stop(%Sonos.Device{} = device) do
+    device
+    |> avtransport_control("Stop", InstanceID: 0)
+    |> case do
+      {:ok, _res} -> :ok
+      err -> err
+    end
+  end
+
+  def next(%Sonos.Device{} = device) do
+    device
+    |> avtransport_control("Next", InstanceID: 0)
+    |> case do
+      {:ok, _res} ->
+        :ok
+
+      {:error, {:upnp_error, 701}} ->
+        # audio stream doesn't support next (ie radio)
+        Logger.debug("Cannot prev on this type of stream")
+
+
+      {:error, {:upnp_error, 711}} ->
+        # most likely tried to next when there is no next
+        Logger.debug("Tried to next when no next (error 711)")
+        :ok
+
+      err ->
+        err
+    end
+  end
+
+  def prev(%Sonos.Device{} = device) do
+    device
+    |> avtransport_control("Previous", InstanceID: 0)
+    |> case do
+      {:ok, _res} -> :ok
+      {:error, {:upnp_error, 701}} ->
+        # audio stream doesn't support next (ie radio)
+        Logger.debug("Cannot prev on this type of stream")
+        :ok
+
+      {:error, {:upnp_error, 711}} ->
+        # most likely tried to prev when there is no prev
+        Logger.debug("Tried to prev there is no prev (error 711)")
+        :ok
+
+      err -> err
+    end
+  end
+
+  def avtransport_control(%Sonos.Device{} = device, command, args) do
+    import SweetXml
+
+    Sonos.Soap.Request.new("/MediaRenderer/AVTransport", command, args, control: true)
     |> Sonos.Soap.request(device |> Sonos.Device.endpoint())
+    |> case do
+      {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        {:ok, body}
+
+      {:ok, %HTTPoison.Response{status_code: 500, body: body}} ->
+        error_code =
+          body |> xpath(~x"//s:Envelope/s:Body/s:Fault/detail/UPnPError/errorCode/text()"i)
+
+        {:error, {:upnp_error, error_code, error_message}}
+
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+        Logger.debug(
+          "Got back response code #{status} body #{body} for #{command} on #{inspect(device)}"
+        )
+
+        {:error, {:http_error, status, body}}
+
+      {:error, err} ->
+        Logger.debug(
+          "Error running command #{command} #{inspect(args)} on device #{inspect(device)}"
+        )
+
+        {:error, err}
+    end
   end
 
-  def pause do
-    %Command{
-      action: "urn:schemas-upnp-org:service:AVTransport:1#Pause",
-      body:
-        "<u:Pause xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"><InstanceID>0</InstanceID></u:Pause>"
-    }
-  end
-
-  def stop do
-    %Command{
-      action: "urn:schemas-upnp-org:service:AVTransport:1#Stop",
-      body:
-        "<u:Stop xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"><InstanceID>0</InstanceID></u:Stop>"
-    }
-  end
-
-  def next do
-    %Command{
-      action: :"urn:schemas-upnp-org:service:AVTransport:1#Next",
-      body:
-        "<u:Next xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"><InstanceID>0</InstanceID></u:Next>"
-    }
-  end
-
-  def prev do
-    :"urn:schemas-upnp-org:service:AVTransport:1#Previous"
-  end
-
-  def list_available_services do
-    %Command{
-      action: "urn:schemas-upnp-org:service:MusicServices:1#ListAvailableServices",
-      body:
-        "<u:ListAvailableServices xmlns:u=\"urn:schemas-upnp-org:service:MusicServices:1\"></u:ListAvailableServices>"
-    }
-  end
+  # def list_available_services do
+  #    %Command{
+  #      action: "urn:schemas-upnp-org:service:MusicServices:1#ListAvailableServices",
+  #      body:
+  #        "<u:ListAvailableServices xmlns:u=\"urn:schemas-upnp-org:service:MusicServices:1\"></u:ListAvailableServices>"
+  #    }
+  #  end
 
   # http://${info.ip}:1400/ZoneGroupTopology/Event
   # `${anyPlayer.baseUrl}/MusicServices/Control`, soap.TYPE.ListAvailableServices)
@@ -78,7 +141,6 @@ defmodule Sonos.Commands do
   def subscribe_group_rendering_control(endpoint \\ "http://192.168.1.96:1400") do
     "#{endpoint}/MediaRenderer/GroupRenderingControl/Event" |> subscribe()
   end
-
 
   def subscribe_contentdirectory(endpoint \\ "http://192.168.1.97:1400") do
     "#{endpoint}/MediaServer/ContentDirectory/Event" |> subscribe()

@@ -11,10 +11,14 @@ defmodule Sonos.Soap do
         opts[:event] -> "#{service}/Event"
         true -> service
       end
+
+      # eg /MediaRenderer/AVTransport -> AVTransport
+      service_part = Regex.replace(~r/.*\//, service,"")
+
       %Request{
         route: route,
-        action: Soap.upnp_action(service, action),
-        body: Soap.upnp_body(service, action, args)
+        action: Soap.upnp_action(service_part, action),
+        body: Soap.upnp_body(service_part, action, args)
       }
     end
   end
@@ -28,7 +32,7 @@ defmodule Sonos.Soap do
   end
 
   def upnp_body(service, action, args) do
-    XmlBuilder.element("s:#{action}", %{
+    XmlBuilder.element("u:#{action}", %{
       :"xmlns:u" => upnp_service(service)
     }, args |> Enum.map(fn {k, v} ->
       XmlBuilder.element(k, %{}, v)
@@ -53,9 +57,9 @@ defmodule Sonos.Soap do
   end
 
   def request(%Request{} = req, endpoint) do
-    url = "#{endpoint}/#{req.route}"
+    url = "#{endpoint}/#{req.route |> String.trim_leading("/")}"
 
-    body = req.body |> body_tag() |> envelope()
+    body = req.body |> body_tag() |> envelope() |> XmlBuilder.generate(format: :none)
 
     headers = [
       {"CONTENT-TYPE", "text/xml; charset=\"utf-8\""},

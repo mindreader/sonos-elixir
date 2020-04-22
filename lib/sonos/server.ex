@@ -1,9 +1,8 @@
-require Logger
-
 defmodule Sonos.Server do
   use GenServer
 
   alias Sonos.Device
+  require Logger
 
   defmodule State do
     defstruct ports: nil, devices: nil
@@ -18,36 +17,29 @@ defmodule Sonos.Server do
       ports: Sonos.SSDP.ports,
       devices: %{}
     }
-    {:ok, state}
+    {:ok, state, {:continue, :scan}}
   end
 
   def handle_cast(:scan, state) do
-    IO.puts("scanning")
+    Logger.debug("Scanning...")
     state.ports |> Sonos.SSDP.scan()
-
-    state = %{ state |
-      devices: %{}
-    }
     {:noreply, state}
   end
 
   def handle_cast({:identify, %Device{} = device, %Device.Description{} = description}, state) do
-    case device |> Device.uuid() do
-      {:ok, uuid} ->
-        state.devices[uuid] |> case do
-          nil ->
-            Logger.debug("Attempted to identify a device that has gone away #{inspect(device)}")
-            {:noreply, state}
-          %Device{} = dev ->
-            state = update_in(state.devices, fn devices ->
-              devices|> Map.put(uuid, %Device{ dev |
-                description: description
-              })
-            end)
-            {:noreply, state}
-        end
-      err ->
-        Logger.debug("Cannot identify device #{inspect(err)}")
+    uuid = device |> Device.uuid()
+
+    state.devices[uuid] |> case do
+      nil ->
+        Logger.debug("Attempted to identify a device that has gone away #{inspect(device)}")
+        {:noreply, state}
+      %Device{} = dev ->
+        state = update_in(state.devices, fn devices ->
+          devices|> Map.put(uuid, %Device{ dev |
+            description: description
+          })
+        end)
+        {:noreply, state}
     end
   end
 
@@ -67,18 +59,22 @@ defmodule Sonos.Server do
 
     alias Sonos.{Device,SSDP}
 
-    device = msg |> SSDP.response_parse |> Device.from_headers(ip)
+    msg |> SSDP.response_parse |> Device.from_headers(ip) |> case do
+      {:ok, %Device{} = device} ->
+        uuid = device |> Device.uuid()
 
-    case device |> Device.uuid() do
-      {:ok, uuid} ->
         state = %State { state |
           devices: state.devices |> Map.put(uuid, device)
         }
+        Task.start(Sonos, :identify, [device])
         {:noreply, state}
+
       _ ->
-        Logger.debug("Unable to get uuid for device #{inspect(device)}")
         {:noreply, state}
     end
   end
 
+  def handle_continue(:scan, state) do
+    handle_cast(:scan, state)
+  end
 end
