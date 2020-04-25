@@ -94,15 +94,92 @@ defmodule Sonos.Commands do
         Logger.debug("Tried to prev there is no prev (error 711)")
         :ok
 
+      err ->
+        err
+    end
+  end
+
+  def get_volume(%Sonos.Device{} = device) do
+    import SweetXml
+
+    device |> mediarenderer_control("GetVolume", InstanceID: 0, Channel: :Master) |> case do
+      {:ok, resp} ->
+        resp |> xpath(~x"//s:Envelope/s:Body/u:GetVolumeResponse/CurrentVolume/text()"i) |> case do
+          i when is_integer(i) -> {:ok, i}
+          _err -> {:error, {:invalid_volume, resp}}
+        end
       err -> err
     end
   end
 
+  def set_volume(%Sonos.Device{} = device, vol, opts \\ []) when is_integer(vol) do
+    {op, volarg}   = if opts[:relative] do
+      {"SetRelativeVolume", Adjustment}
+    else
+      {"SetVolume", DesiredVolume}
+    end
+
+    args = [InstanceID: 0, Channel: :Master] |>  Keyword.put(volarg, vol)
+
+    device |> mediarenderer_control(op, args)
+    |> case do
+      {:ok, _resp} -> :ok
+      err -> err
+    end
+  end
+
+  def queue_file(%Sonos.Device{} = device, _filename, opts \\ []) do
+
+    next = (opts[:next] && 1) || 0
+
+    # TODO EnqueuedURIMetaData
+    # likely didl-lite
+    # <TrackMetaData>&lt;DIDL-Lite xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot; xmlns:r=&quot;urn:schemas-rinconnetworks-com:metadata-1-0/&quot; xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot;&gt;&lt;item id=&quot;-1&quot; parentID=&quot;-1&quot; restricted=&quot;true&quot;&gt;&lt;res protocolInfo=&quot;sonos.com-http:*:application/x-mpegURL:*&quot; duration=&quot;0:03:22&quot;&gt;x-sonosapi-hls-static:ALkSOiGvBu9Xd50awyN8LBjtaazvgj5HTrNL9NPY2xceITlVkzBKwfTYlkknlbJtWnE-cbpG7oAO-9e2QmNoKkc0lh5-sWjJ?sid=284&amp;amp;flags=0&amp;amp;sn=3&lt;/res&gt;&lt;r:streamContent&gt;&lt;/r:streamContent&gt;&lt;upnp:albumArtURI&gt;/getaa?s=1&amp;amp;u=x-sonosapi-hls-static%3aALkSOiGvBu9Xd50awyN8LBjtaazvgj5HTrNL9NPY2xceITlVkzBKwfTYlkknlbJtWnE-cbpG7oAO-9e2QmNoKkc0lh5-sWjJ%3fsid%3d284%26flags%3d0%26sn%3d3&lt;/upnp:albumArtURI&gt;&lt;dc:title&gt;Blinding Lights&lt;/dc:title&gt;&lt;upnp:class&gt;object.item.audioItem.musicTrack&lt;/upnp:class&gt;&lt;dc:creator&gt;The Weeknd&lt;/dc:creator&gt;&lt;upnp:album&gt;Blinding Lights&lt;/upnp:album&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;</TrackMetaData>
+    url = "http://192.168.1.80:4001/audio/foo.mp3"
+    device |> avtransport_control("AddURIToQueue",
+      InstanceID: 0,
+      EnqueuedURI: url,
+      EnqueuedURIMetaData: "",
+      EnqueueAsNext: next |> IO.inspect(label: "next"),
+      DesiredFirstTrackNumberEnqueued: 0
+    )
+  end
+
+  def get_position_info(%Sonos.Device{} = device) do
+    device |> avtransport_control("GetPositionInfo", InstanceID: 0)
+  end
+
+  def av_debug(%Sonos.Device{} = device) do
+    device |> avtransport_control("GetCurrentTransportActions", InstanceID: 0)
+  end
+
+  def mediarenderer_control(%Sonos.Device{} = device, command, args) do
+    endpoint = device |> Sonos.Device.endpoint()
+
+    Sonos.Soap.Request.new("/MediaRenderer/RenderingControl", command, args)
+    |> request(endpoint)
+  end
+
   def avtransport_control(%Sonos.Device{} = device, command, args) do
+    endpoint = device |> Sonos.Device.endpoint()
+
+    Sonos.Soap.Request.new("/MediaRenderer/AVTransport", command, args)
+    |> request(endpoint)
+  end
+
+  def avtransport_event(%Sonos.Device{} = device) do
+    endpoint = device |> Sonos.Device.endpoint()
+
+    Sonos.Soap.Subscription.new("/MediaRenderer/AVTransport")
+    |> Sonos.Soap.subscribe(endpoint)
+  end
+
+
+  def request(%Sonos.Soap.Request{} = req, endpoint, opts \\ []) do
     import SweetXml
 
-    Sonos.Soap.Request.new("/MediaRenderer/AVTransport", command, args, control: true)
-    |> Sonos.Soap.request(device |> Sonos.Device.endpoint())
+    req
+    |> Sonos.Soap.request(endpoint)
     |> case do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         {:ok, body}
@@ -111,60 +188,38 @@ defmodule Sonos.Commands do
         error_code =
           body |> xpath(~x"//s:Envelope/s:Body/s:Fault/detail/UPnPError/errorCode/text()"i)
 
-        {:error, {:upnp_error, error_code, error_message}}
+        {:error, {:upnp_error, error_code}}
 
       {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
         Logger.debug(
-          "Got back response code #{status} body #{body} for #{command} on #{inspect(device)}"
+          "Got back response code #{status} body #{body} for #{req.action} on endpoint #{endpoint}"
         )
 
         {:error, {:http_error, status, body}}
 
       {:error, err} ->
         Logger.debug(
-          "Error running command #{command} #{inspect(args)} on device #{inspect(device)}"
+          "Error running request #{inspect(req)} on endpoint #{endpoint}"
         )
 
         {:error, err}
     end
   end
 
-  # def list_available_services do
-  #    %Command{
-  #      action: "urn:schemas-upnp-org:service:MusicServices:1#ListAvailableServices",
-  #      body:
-  #        "<u:ListAvailableServices xmlns:u=\"urn:schemas-upnp-org:service:MusicServices:1\"></u:ListAvailableServices>"
-  #    }
-  #  end
 
   # http://${info.ip}:1400/ZoneGroupTopology/Event
   # `${anyPlayer.baseUrl}/MusicServices/Control`, soap.TYPE.ListAvailableServices)
 
-  def subscribe_group_rendering_control(endpoint \\ "http://192.168.1.96:1400") do
-    "#{endpoint}/MediaRenderer/GroupRenderingControl/Event" |> subscribe()
-  end
+  #  def subscribe_group_rendering_control(endpoint \\ "http://192.168.1.96:1400") do
+  #    "#{endpoint}/MediaRenderer/GroupRenderingControl/Event" |> subscribe()
+  #  end
+  #
+  #  def subscribe_contentdirectory(endpoint \\ "http://192.168.1.97:1400") do
+  #    "#{endpoint}/MediaServer/ContentDirectory/Event" |> subscribe()
+  #  end
+  #
+  #   def subscribe_topology(endpoint \\ "http://192.168.1.97:1400") do
+  #    "#{endpoint}/ZoneGroupTopology/Event" |> subscribe()
+  #  end
 
-  def subscribe_contentdirectory(endpoint \\ "http://192.168.1.97:1400") do
-    "#{endpoint}/MediaServer/ContentDirectory/Event" |> subscribe()
-  end
-
-  def subscribe_av_transport(endpoint \\ "http://192.168.1.97:1400") do
-    "#{endpoint}/MediaRenderer/AVTransport/Event" |> subscribe()
-  end
-
-  def subscribe_topology(endpoint \\ "http://192.168.1.97:1400") do
-    "#{endpoint}/ZoneGroupTopology/Event" |> subscribe()
-  end
-
-  def subscribe(url) do
-    # TODO get and store SID
-    # TODO don't hard code ip
-    headers = [
-      {"TIMEOUT", "Second-60"},
-      {"CALLBACK", "<http://192.168.1.80:4001/>"},
-      {"NT", "upnp:event"}
-    ]
-
-    HTTPoison.request(:subscribe, url, "", headers)
-  end
 end
