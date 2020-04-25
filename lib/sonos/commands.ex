@@ -3,6 +3,7 @@ defmodule Sonos.Commands do
 
   # /MediaRenderer/AVTransport/Control - play / stop / seek / playlists
   # /MediaRenderer/Queue/Control - control the queue
+  #   Q:0,4 - queue name, size of queue?
   # /MediaRenderer/RenderingControl/Control - playback rendering, bass, treble, volume and eq InstanceID?
   # /MediaRenderer/GroupRenderingControl/Control - control group volume etc.
   # /MediaServer/ContentDirectory/Control - browsing, searching, listing available music
@@ -64,8 +65,7 @@ defmodule Sonos.Commands do
 
       {:error, {:upnp_error, 701}} ->
         # audio stream doesn't support next (ie radio)
-        Logger.debug("Cannot prev on this type of stream")
-
+        Logger.debug("Cannot use next on this type of stream")
 
       {:error, {:upnp_error, 711}} ->
         # most likely tried to next when there is no next
@@ -81,7 +81,9 @@ defmodule Sonos.Commands do
     device
     |> avtransport_control("Previous", InstanceID: 0)
     |> case do
-      {:ok, _res} -> :ok
+      {:ok, _res} ->
+        :ok
+
       {:error, {:upnp_error, 701}} ->
         # audio stream doesn't support next (ie radio)
         Logger.debug("Cannot prev on this type of stream")
