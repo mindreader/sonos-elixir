@@ -1,10 +1,12 @@
 defmodule Sonos.Soap do
+  require Logger
+
   defmodule Request do
     alias Sonos.Soap
 
     defstruct action: nil, body: nil, route: nil
 
-    def new(service, action, args \\ [], opts \\ []) do
+    def new(service, action, args \\ [], _opts \\ []) do
       route = "#{service}/Control"
 
       # eg /MediaRenderer/AVTransport -> AVTransport
@@ -74,7 +76,7 @@ defmodule Sonos.Soap do
     [contents] |> body_tag()
   end
 
-  def request(%Request{} = req, endpoint, opts \\ []) do
+  def request(%Request{} = req, endpoint, _opts \\ []) do
     url = "#{endpoint}/#{req.route |> String.trim_leading("/")}"
 
     body = req.body |> body_tag() |> envelope() |> XmlBuilder.generate(format: :none)
@@ -95,10 +97,21 @@ defmodule Sonos.Soap do
 
     headers = [
       {"TIMEOUT", "Second-60"},
-      {"CALLBACK", "<http://192.168.1.80:4001/>"},
+      {"CALLBACK", "<http://192.168.1.80:4001/events/av>"},
       {"NT", "upnp:event"}
     ]
 
-    HTTPoison.request(:subscribe, url, "", headers)
+    HTTPoison.request(:subscribe, url, "", headers) |> case do
+      {:ok, %HTTPoison.Response{status_code: 200, body: ""} = resp} ->
+        resp.headers |> Enum.find(fn {h,_v} ->
+          h |> String.upcase == "SID"
+        end) |> case do
+          nil -> {:ok, :unknown_sid}
+          {_h, sid} -> {:ok, sid |> String.trim}
+        end
+      err ->
+        Logger.error("Failed to subscribe #{inspect(sub)} error #{inspect(err)}")
+        {:error, err}
+    end
   end
 end
