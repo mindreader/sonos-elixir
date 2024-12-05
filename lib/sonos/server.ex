@@ -5,7 +5,7 @@ defmodule Sonos.Server do
   require Logger
 
   defmodule State do
-    defstruct ports: nil, devices: nil
+    defstruct port: nil, devices: nil
   end
 
   def start_link(_args) do
@@ -14,7 +14,7 @@ defmodule Sonos.Server do
 
   def init(_args) do
     state = %State {
-      ports: Sonos.SSDP.ports,
+      port: Sonos.SSDP.port,
       devices: %{}
     }
     {:ok, state, {:continue, :scan}}
@@ -22,11 +22,13 @@ defmodule Sonos.Server do
 
   def handle_cast(:scan, state) do
     Logger.debug("Scanning...")
-    state.ports |> Sonos.SSDP.scan()
+    state.port |> Sonos.SSDP.scan()
     {:noreply, state}
   end
 
   def handle_cast({:identify, %Device{} = device, %Device.Description{} = description}, state) do
+    Logger.debug("Identifying device #{inspect(device)}")
+
     uuid = device |> Device.uuid()
 
     state.devices[uuid] |> case do
@@ -53,11 +55,15 @@ defmodule Sonos.Server do
 
   # TODO tidy this stuff up a bit.
   def handle_info({:udp_passive, port, ip, something, msg}, state) do
+    Logger.info("Received passive message from #{inspect(ip)} msg #{inspect(msg)}")
     handle_info({:udp, port, ip, something, msg}, state)
   end
+
   def handle_info({:udp, _port, ip, _something, msg}, state) do
 
     alias Sonos.{Device,SSDP}
+
+    Logger.info("Received message from #{inspect(ip)} msg #{inspect(msg)}")
 
     msg |> SSDP.response_parse |> Device.from_headers(ip) |> case do
       {:ok, %Device{} = device} ->
@@ -72,6 +78,11 @@ defmodule Sonos.Server do
       _ ->
         {:noreply, state}
     end
+  end
+
+  def handle_info(msg, state) do
+    Logger.info("Unhandled message #{inspect(msg)}")
+    {:noreply, state}
   end
 
   def handle_continue(:scan, state) do

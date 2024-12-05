@@ -11,7 +11,7 @@ defmodule Sonos.Commands do
   # /QPlay ??? (some chinese tencent audio service)
   #
   # /ZonePlayer/ ... ?
-  # /AlarmClock - alarm clock functionality 
+  # /AlarmClock - alarm clock functionality
   # /MusicServices - music serve list etc.
   # /DeviceProperties - a lot of device properties
   # /SystemProperties - account stuff, oauth stuff?
@@ -175,7 +175,7 @@ defmodule Sonos.Commands do
   end
 
 
-  def request(%Sonos.Soap.Request{} = req, endpoint, opts \\ []) do
+  def request(%Sonos.Soap.Request{} = req, endpoint, _opts \\ []) do
     import SweetXml
 
     req
