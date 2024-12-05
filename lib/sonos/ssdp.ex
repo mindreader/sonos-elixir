@@ -14,12 +14,13 @@ defmodule Sonos.SSDP do
       # active: 10,
       active: true, # TODO FIXME use active: 1 and passive udp
 
-      # multicast receiving options
+      # multicast receiving options (we're listening on all interfaces)
       add_membership: {@multicast_group, {0, 0, 0, 0}},
+
       # multicast sending options
-      multicast_if: {0, 0, 0, 0},
-      multicast_loop: false,
-      multicast_ttl: 4,
+      multicast_if: {0, 0, 0, 0}, # we're sending from all interfaces which support multicast
+      multicast_loop: false, # don't send our own events back to ourselves
+      multicast_ttl: 2, # hop to at least 2 routers away
     ]
   end
 
