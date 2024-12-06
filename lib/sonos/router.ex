@@ -1,12 +1,12 @@
 defmodule Sonos.Router do
   use Plug.Router
 
-  plug :match
-  plug :dispatch
+  plug(:match)
+  plug(:dispatch)
 
   match "/events/av" do
     {:ok, body, conn} = conn |> Plug.Conn.read_body()
-    body |> IO.inspect(label: "body") |> Sonos.Events.last_change
+    body |> IO.inspect(label: "body") |> Sonos.Events.last_change()
 
     conn
     |> put_resp_content_type("text/plain")
@@ -22,7 +22,8 @@ defmodule Sonos.Router do
   match _ do
     {:ok, body, conn} = conn |> Plug.Conn.read_body()
 
-    body |> IO.puts
+    body |> IO.puts()
+
     conn
     |> put_resp_content_type("text/plain")
     |> send_resp(200, "OK")

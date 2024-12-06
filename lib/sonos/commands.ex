@@ -102,26 +102,34 @@ defmodule Sonos.Commands do
   def get_volume(%Sonos.Device{} = device) do
     import SweetXml
 
-    device |> mediarenderer_control("GetVolume", InstanceID: 0, Channel: :Master) |> case do
+    device
+    |> mediarenderer_control("GetVolume", InstanceID: 0, Channel: :Master)
+    |> case do
       {:ok, resp} ->
-        resp |> xpath(~x"//s:Envelope/s:Body/u:GetVolumeResponse/CurrentVolume/text()"i) |> case do
+        resp
+        |> xpath(~x"//s:Envelope/s:Body/u:GetVolumeResponse/CurrentVolume/text()"i)
+        |> case do
           i when is_integer(i) -> {:ok, i}
           _err -> {:error, {:invalid_volume, resp}}
         end
-      err -> err
+
+      err ->
+        err
     end
   end
 
   def set_volume(%Sonos.Device{} = device, vol, opts \\ []) when is_integer(vol) do
-    {op, volarg}   = if opts[:relative] do
-      {"SetRelativeVolume", Adjustment}
-    else
-      {"SetVolume", DesiredVolume}
-    end
+    {op, volarg} =
+      if opts[:relative] do
+        {"SetRelativeVolume", Adjustment}
+      else
+        {"SetVolume", DesiredVolume}
+      end
 
-    args = [InstanceID: 0, Channel: :Master] |>  Keyword.put(volarg, vol)
+    args = [InstanceID: 0, Channel: :Master] |> Keyword.put(volarg, vol)
 
-    device |> mediarenderer_control(op, args)
+    device
+    |> mediarenderer_control(op, args)
     |> case do
       {:ok, _resp} -> :ok
       err -> err
@@ -129,14 +137,15 @@ defmodule Sonos.Commands do
   end
 
   def queue_file(%Sonos.Device{} = device, _filename, opts \\ []) do
-
     next = (opts[:next] && 1) || 0
 
     # TODO EnqueuedURIMetaData
     # likely didl-lite
     # <TrackMetaData>&lt;DIDL-Lite xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot; xmlns:r=&quot;urn:schemas-rinconnetworks-com:metadata-1-0/&quot; xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot;&gt;&lt;item id=&quot;-1&quot; parentID=&quot;-1&quot; restricted=&quot;true&quot;&gt;&lt;res protocolInfo=&quot;sonos.com-http:*:application/x-mpegURL:*&quot; duration=&quot;0:03:22&quot;&gt;x-sonosapi-hls-static:ALkSOiGvBu9Xd50awyN8LBjtaazvgj5HTrNL9NPY2xceITlVkzBKwfTYlkknlbJtWnE-cbpG7oAO-9e2QmNoKkc0lh5-sWjJ?sid=284&amp;amp;flags=0&amp;amp;sn=3&lt;/res&gt;&lt;r:streamContent&gt;&lt;/r:streamContent&gt;&lt;upnp:albumArtURI&gt;/getaa?s=1&amp;amp;u=x-sonosapi-hls-static%3aALkSOiGvBu9Xd50awyN8LBjtaazvgj5HTrNL9NPY2xceITlVkzBKwfTYlkknlbJtWnE-cbpG7oAO-9e2QmNoKkc0lh5-sWjJ%3fsid%3d284%26flags%3d0%26sn%3d3&lt;/upnp:albumArtURI&gt;&lt;dc:title&gt;Blinding Lights&lt;/dc:title&gt;&lt;upnp:class&gt;object.item.audioItem.musicTrack&lt;/upnp:class&gt;&lt;dc:creator&gt;The Weeknd&lt;/dc:creator&gt;&lt;upnp:album&gt;Blinding Lights&lt;/upnp:album&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;</TrackMetaData>
     url = "http://192.168.1.80:4001/audio/foo.mp3"
-    device |> avtransport_control("AddURIToQueue",
+
+    device
+    |> avtransport_control("AddURIToQueue",
       InstanceID: 0,
       EnqueuedURI: url,
       EnqueuedURIMetaData: "",
@@ -174,7 +183,6 @@ defmodule Sonos.Commands do
     |> Sonos.Soap.subscribe(endpoint)
   end
 
-
   def request(%Sonos.Soap.Request{} = req, endpoint, _opts \\ []) do
     import SweetXml
 
@@ -198,14 +206,11 @@ defmodule Sonos.Commands do
         {:error, {:http_error, status, body}}
 
       {:error, err} ->
-        Logger.debug(
-          "Error running request #{inspect(req)} on endpoint #{endpoint}"
-        )
+        Logger.debug("Error running request #{inspect(req)} on endpoint #{endpoint}")
 
         {:error, err}
     end
   end
-
 
   # http://${info.ip}:1400/ZoneGroupTopology/Event
   # `${anyPlayer.baseUrl}/MusicServices/Control`, soap.TYPE.ListAvailableServices)
@@ -221,5 +226,4 @@ defmodule Sonos.Commands do
   #   def subscribe_topology(endpoint \\ "http://192.168.1.97:1400") do
   #    "#{endpoint}/ZoneGroupTopology/Event" |> subscribe()
   #  end
-
 end

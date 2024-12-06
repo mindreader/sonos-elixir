@@ -12,7 +12,7 @@ defmodule Sonos.Soap do
       # eg /MediaRenderer/AVTransport -> AVTransport
       service_part = Regex.replace(~r/.*\//, service, "")
 
-      %Request {
+      %Request{
         route: route,
         action: Soap.upnp_action(service_part, action),
         body: Soap.upnp_body(service_part, action, args)
@@ -26,7 +26,7 @@ defmodule Sonos.Soap do
     def new(service) do
       route = "#{service}/Event"
 
-      %Subscription {
+      %Subscription{
         route: route
       }
     end
@@ -101,14 +101,18 @@ defmodule Sonos.Soap do
       {"NT", "upnp:event"}
     ]
 
-    HTTPoison.request(:subscribe, url, "", headers) |> case do
+    HTTPoison.request(:subscribe, url, "", headers)
+    |> case do
       {:ok, %HTTPoison.Response{status_code: 200, body: ""} = resp} ->
-        resp.headers |> Enum.find(fn {h,_v} ->
-          h |> String.upcase == "SID"
-        end) |> case do
+        resp.headers
+        |> Enum.find(fn {h, _v} ->
+          h |> String.upcase() == "SID"
+        end)
+        |> case do
           nil -> {:ok, :unknown_sid}
-          {_h, sid} -> {:ok, sid |> String.trim}
+          {_h, sid} -> {:ok, sid |> String.trim()}
         end
+
       err ->
         Logger.error("Failed to subscribe #{inspect(sub)} error #{inspect(err)}")
         {:error, err}

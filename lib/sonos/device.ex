@@ -12,13 +12,13 @@ defmodule Sonos.Device do
     valid_uuid = is_binary(usn) && Regex.match?(~r/uuid:RINCON[^:]+::/, usn)
 
     if house && location && usn && valid_uuid do
-
-      {:ok, %Sonos.Device {
-        usn: usn,
-        ip: ip,
-        description_url: location,
-        household: house,
-      }}
+      {:ok,
+       %Sonos.Device{
+         usn: usn,
+         ip: ip,
+         description_url: location,
+         household: house
+       }}
     else
       Logger.debug("Got udp packet for unknown device #{inspect(headers)}")
       {:error, :unknown_device}
@@ -26,8 +26,9 @@ defmodule Sonos.Device do
   end
 
   def uuid(%Device{} = dev) do
-    Regex.run(~r/(uuid:RINCON[^:]+)::/, dev.usn) |> case do
-      [_,res] -> res
+    Regex.run(~r/(uuid:RINCON[^:]+)::/, dev.usn)
+    |> case do
+      [_, res] -> res
       _ -> {:error, {:invalid_usn, dev.usn}}
     end
   end
@@ -35,7 +36,7 @@ defmodule Sonos.Device do
   def endpoint(%Device{} = device) do
     # TODO ipv6
     case device.ip do
-      {a,b,c,d} -> "http://#{a}.#{b}.#{c}.#{d}:1400"
+      {a, b, c, d} -> "http://#{a}.#{b}.#{c}.#{d}:1400"
     end
   end
 
@@ -48,11 +49,15 @@ defmodule Sonos.Device do
 
     opts = [
       timeout: 2000,
-      recv_timeout: 1000,
+      recv_timeout: 1000
     ]
-    dev.description_url |> HTTPoison.get([], opts) |> case do
-      {:ok, %HTTPoison.Response{ status_code: 200 } = resp} ->
+
+    dev.description_url
+    |> HTTPoison.get([], opts)
+    |> case do
+      {:ok, %HTTPoison.Response{status_code: 200} = resp} ->
         {:ok, resp.body |> Device.Description.from_response()}
+
       {:error, err} ->
         if retries == 0 do
           {:error, {:cannot_identify, err}}

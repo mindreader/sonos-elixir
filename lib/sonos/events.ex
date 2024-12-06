@@ -3,9 +3,9 @@ defmodule Sonos.Events do
 
   # if avtransporturi starts with 'x-rincon:', that may signal that it is the coordinator
 
-
   def group_rendering_control(doc) do
-    doc |> xpath(~x"//e:propertyset"l,
+    doc
+    |> xpath(~x"//e:propertyset"l,
       group_volume: ~x"./e:property/GroupVolume/text()"i,
       group_mute: ~x"./e:property/GroupMute/text()"i,
       group_volume_changeable: ~x"./e:property/GroupVolumeChangeable/text()"i
@@ -13,7 +13,8 @@ defmodule Sonos.Events do
   end
 
   def content_directory(doc) do
-    doc |> xpath(~x"//e:propertyset"l,
+    doc
+    |> xpath(~x"//e:propertyset"l,
       system_update_id: ~x"./e:property/SystemUpdateID/text()"s,
       container_update_ids: ~x"./e:property/ContainerUpdateIDs/text()"s,
       share_index_in_progress: ~x"./e:property/ShareIndexInProgress/text()"s,
@@ -28,8 +29,10 @@ defmodule Sonos.Events do
   def zone_group_state(doc) do
     doc
     |> xpath(~x"//e:propertyset/e:property/ZoneGroupState/text()"S)
-    |> xpath(~x"//ZoneGroupState/ZoneGroups/ZoneGroup"l) |> Enum.map(fn zg ->
-      zg |> xpath(~x"./ZoneGroupMember"l,
+    |> xpath(~x"//ZoneGroupState/ZoneGroups/ZoneGroup"l)
+    |> Enum.map(fn zg ->
+      zg
+      |> xpath(~x"./ZoneGroupMember"l,
         uuid: ~x"./@UUID"s,
         location: ~x"./@Location"s,
         zone_name: ~x"./@ZoneName"s,
@@ -86,9 +89,9 @@ defmodule Sonos.Events do
         alarm_running: ~x"./r:AlarmRunning/@val"s,
         snooze_running: ~x"./r:SnoozeRunning/@val"s,
         restart_pending: ~x"./r:RestartPending/@val"s
-        )
-      catch
-        :exit, e -> {:error, e}
+      )
+    catch
+      :exit, e -> {:error, e}
     end
   end
 

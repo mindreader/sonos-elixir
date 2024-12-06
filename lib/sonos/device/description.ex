@@ -6,10 +6,12 @@ defmodule Sonos.Device.Description do
 
   def from_response(doc) do
     # FIXME gotta be a better way
-    attrs = doc |> xpath(~x"//device",
-      model_description: ~x"./modelName/text()",
-      room_name: ~x"./roomName/text()"
-    )
+    attrs =
+      doc
+      |> xpath(~x"//device",
+        model_description: ~x"./modelName/text()",
+        room_name: ~x"./roomName/text()"
+      )
 
     %Description{
       model_description: attrs.model_description,
