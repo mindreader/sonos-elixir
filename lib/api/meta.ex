@@ -28,8 +28,6 @@ defmodule Sonos.Api.Meta do
           "type" => "urn:schemas-upnp-org:device:ZonePlayer:1",
           "services" => [
             %{"type" => "urn:schemas-upnp-org:service:AVTransport:1"}
-          ]
-        }
       ]
       service_types(json, MyApp)
       #=> [{D.F.ZonePlayer, [:av_transport]}]
@@ -47,17 +45,31 @@ defmodule Sonos.Api.Meta do
             Module.concat(parent_module, mod)
           end)
 
-        service_types =
+        services =
           services
-          |> Enum.map(fn x -> x["type"] end)
-          |> Enum.map(fn urn ->
-            urn
-            |> type_from_urn()
-            |> Macro.underscore()
-            |> String.to_atom()
+          |> Enum.map(fn x ->
+            %{
+              module: x["type"]
+              |> type_from_urn()
+              |> String.to_atom()
+              |> then(fn mod ->
+                Module.concat(dev_type, mod)
+              end),
+
+              functions: x["scpd"]["actions"] |> Enum.map(fn x ->
+                x |> IO.inspect(label: "x")
+
+                namef = fn x -> x["name"] |> String.replace("UUIDs", "Uuids") |> Macro.underscore() |> String.to_atom() end
+                %{
+                name: namef.(x),
+                inputs: x["inputs"] |> Enum.map(namef),
+                outputs: x["outputs"] |> Enum.map(namef)
+              }
+              end)
+            }
           end)
 
-        {dev_type, service_types}
+        %{device: dev_type, services: services}
       end)
   end
 
@@ -70,24 +82,27 @@ defmodule Sonos.Api.Meta do
 
     json = File.read!(filename) |> Jason.decode!()
 
-    service_types = json |> service_types(__CALLER__.module)
+    services = json |> service_types(__CALLER__.module)
 
     name = quote do def name do unquote(name) end end
 
-    devices = service_types |> Enum.map(fn {dev_type, service_types} ->
-      Sonos.Api.Meta.device_entry(dev_type, service_types)
+    devices = services |> Enum.map(fn %{device: dev_type, services: services} ->
+      Sonos.Api.Meta.device_entry(dev_type, services)
     end)
 
     [ name | devices ]
   end
 
-  def device_entry(dev_type, service_types) do
+  def device_entry(dev_type, services) do
     functions =
-      service_types
-      |> Enum.map(fn x ->
+      services
+      |> Enum.map(fn %{module: mod} = spec ->
+
+        functions = spec.functions |> Enum.map(fn x -> service_entry(x) end)
+
         quote do
-          def unquote(x)() do
-            nil
+          defmodule unquote(mod) do
+            unquote(functions)
           end
         end
       end)
@@ -95,6 +110,17 @@ defmodule Sonos.Api.Meta do
     quote do
       defmodule unquote(dev_type) do
         unquote(functions)
+      end
+    end
+  end
+
+  def service_entry(service) do
+    inputs = service.inputs |> Enum.map(fn x -> x |> Macro.var(nil) end)
+    quote do
+      def unquote(service.name)(unquote_splicing(inputs)) do
+        _ = {unquote_splicing(inputs)}
+
+        unquote(service.outputs) |> Enum.map(fn x -> {x, nil} end)
       end
     end
   end

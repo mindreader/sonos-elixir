@@ -9,7 +9,7 @@ defmodule Sonos.SSDP do
 
   def start_link(opts) do
     name = opts |> Keyword.get(:name, __MODULE__)
-    GenServer.start_link(__MODULE__, [], name: name) |> IO.inspect(label: "SSDP started")
+    GenServer.start_link(__MODULE__, [], name: name)
   end
 
   defmodule State do
@@ -21,7 +21,7 @@ defmodule Sonos.SSDP do
       socket: port()
     }
 
-    {:ok, state} |> IO.inspect(label: "SSDP init")
+    {:ok, state}
   end
 
   def options do
@@ -43,7 +43,6 @@ defmodule Sonos.SSDP do
       # hop to at least 2 routers away
       multicast_ttl: 4
     ]
-    |> IO.inspect()
   end
 
   def port do
