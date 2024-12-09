@@ -54,7 +54,11 @@ defmodule Sonos.SSDP do
   end
 
   def search do
-    "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n"
+    # This technically gets all sonos devices I'm aware of, but I'm going to get constant chatter from other
+    # ssdp enabled devices and will have to filter them out anyways, so I might as well use the standard ssdp
+    # root device query instead in case there is some future where a device doesn't advertise ZonePlayer.
+    # "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n"
+    "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: upnp:rootdevice\r\n"
   end
 
   def scan(search \\ search()) do

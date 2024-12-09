@@ -26,7 +26,6 @@ defmodule Sonos.Api.Meta do
   end
 
   def validator(varname, type) when type in @data_types do
-    alias Sonos.Api.Meta, as: M
     var = Macro.var(varname, nil)
 
     # TODO richer errors
@@ -38,7 +37,7 @@ defmodule Sonos.Api.Meta do
 
       :string ->
         quote do
-          :ok <- M.val_type(is_binary(unquote(var)), unquote(varname), unquote(type))
+          :ok <- M.val_type(is_binary(unquote(var)) || is_atom(unquote(var)), unquote(varname), unquote(type))
         end
 
       :ui1 ->
@@ -297,8 +296,10 @@ defmodule Sonos.Api.Meta do
             function_entry(device_name, service_name, function, function_docs)
           end)
 
+
         quote do
           defmodule unquote(service_module) do
+            alias Sonos.Api.Meta, as: M
             @moduledoc """
             #{unquote(service_docs["description"])}
 
@@ -319,14 +320,22 @@ defmodule Sonos.Api.Meta do
   end
 
   def function_entry(device_name, service_name, action, function_docs) do
+    inputs = action.inputs |> Enum.map(fn x -> {x.original_name, Macro.var(x.name, nil)} end)
+
     endpoint = Macro.var(:endpoint, nil)
 
-    inputs = [ endpoint |
-      action.inputs |> Enum.map(fn x -> x.name |> Macro.var(nil) end)
-    ]
+    output_value = quote do
+         Sonos.Soap.Request.new(
+          "/#{unquote(device_name)}/#{unquote(service_name)}",
+          unquote(action.original_name),
+          unquote(inputs)
+        )
+        |> Sonos.Soap.request(unquote(endpoint))
+        |> Sonos.Soap.Response.new(unquote(action.original_name), unquote(action.outputs |> Macro.escape()))
+    end
 
-    output_value =
-      {:ok, action.outputs |> Enum.map(fn x -> {x.name, nil} end) |> Map.new()} |> Macro.escape()
+    params = [ endpoint | action.inputs |> Enum.map(fn x -> x.name |> Macro.var(nil) end) ]
+
 
     validation = validate(action.inputs, output_value)
 
@@ -369,6 +378,7 @@ defmodule Sonos.Api.Meta do
               unquote("""
               ## Inputs
 
+              * `endpoint`: The endpoint of the device to call (eg `http://192.168.1.96:1400`)
               #{inputs |> Enum.map(fn {name, description} -> "* `#{name}`: #{description}\n" end) |> Enum.join()}
               """)
             end
@@ -385,9 +395,7 @@ defmodule Sonos.Api.Meta do
 
       #{unquote(remarks)}
       """
-      def unquote(action.name)(unquote_splicing(inputs)) do
-        IO.puts("calling function #{unquote(action.name)} device #{unquote(device_name)} service #{unquote(service_name)}")
-        _ = unquote(endpoint)
+      def unquote(action.name)(unquote_splicing(params)) when is_binary(unquote(endpoint)) do
         unquote(validation)
       end
     end

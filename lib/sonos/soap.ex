@@ -7,6 +7,7 @@ defmodule Sonos.Soap do
     defstruct action: nil, body: nil, route: nil
 
     def new(service, action, args \\ [], _opts \\ []) do
+      Logger.info("request #{service} #{action} #{inspect(args)}")
       route = "#{service}/Control"
 
       # eg /MediaRenderer/AVTransport -> AVTransport
@@ -15,8 +16,53 @@ defmodule Sonos.Soap do
       %Request{
         route: route,
         action: Soap.upnp_action(service_part, action),
-        body: Soap.upnp_body(service_part, action, args)
+        body: Soap.upnp_body(service_part, action, args),
       }
+    end
+  end
+
+  defmodule Response do
+    defstruct outputs: nil
+
+    def new(response, function, outputs \\ [], _opts \\ []) do
+      case response do
+        {:ok, %HTTPoison.Response{body: body, status_code: 200}} ->
+          result_outputs = body
+          |> XmlToMap.naive_map()
+          |> get_in(["s:Envelope", "#content", "s:Body","u:#{function}Response"])
+
+          resp = %Response{
+            outputs:
+              outputs
+              |> Enum.map(fn x ->
+                result_output = result_outputs |> get_in([to_string(x.original_name)])
+
+                result_output = case !is_nil(result_output) and x.data_type do
+                  :string ->
+                    result_output
+                  :boolean ->
+                    result_output |> String.to_existing_atom()
+                  x when x in [:i1, :i2, :i4, :i8, :ui1, :ui2, :ui4, :ui8] ->
+                    result_output |> String.to_integer()
+                  _ ->
+                    result_output
+                end
+
+                {
+                x.name,
+                result_output
+              } end)
+              |> Map.new()
+          }
+          {:ok, resp}
+
+        {:ok, %HTTPoison.Response{body: body, status_code: code}} ->
+          IO.puts("error #{inspect(code)}")
+          {:error, {:http_error, code, body}}
+
+        err ->
+          err
+      end
     end
   end
 
