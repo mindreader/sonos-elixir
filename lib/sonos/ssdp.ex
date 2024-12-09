@@ -130,7 +130,7 @@ defmodule Sonos.SSDP do
   # securelocation.upnp.org - https resource for the device for the above
 
   defmodule Message do
-    defstruct type: nil, headers: nil
+    defstruct type: nil, headers: %{}
   end
 
   def response_parse(str) do
@@ -138,13 +138,13 @@ defmodule Sonos.SSDP do
     |> String.split("\r\n")
     |> Enum.reduce(nil, fn
       "NOTIFY * HTTP/1.1", nil ->
-        %Message{type: :NOTIFY, headers: %{}}
+        %Message{type: :NOTIFY}
 
       "HTTP/1.1 200 OK", nil ->
-        %Message{type: :OK, headers: %{}}
+        %Message{type: :OK}
 
       "M-SEARCH * HTTP/1.1", nil ->
-        %Message{type: :"M-SEARCH", headers: %{}}
+        %Message{type: :"M-SEARCH"}
 
       header, %Message{} = msg ->
         Regex.run(~r/^([^:]+):(?: (.*))?$/, header)
