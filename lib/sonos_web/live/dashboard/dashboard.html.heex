@@ -1,0 +1,28 @@
+<.header :if={@live_action == :show}>
+  <:actions>
+    <.link patch={~p"/podcasts/#{@podcast.id}/episodes"} phx-click={JS.push_focus()}>
+      <.button>Episodes</.button>
+    </.link>
+    <.link patch={~p"/podcasts/#{@podcast.id}/edit"} phx-click={JS.push_focus()}>
+      <.button>Edit Podcast</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<!--.icon name="hero-home-solid" class="h-5 w-5" /-->
+
+<.list :if={@live_action == :home}>
+  <:item title="Title"><%= @podcast.title %></:item>
+  <:item title="Created at"><%= @podcast.created_at %></:item>
+  <:item title="Published at"><%= @podcast.published_at %></:item>
+</.list>
+
+<!--.back navigate={~p"/podcasts"}>Back to podcasts</.back-->
+
+<!--.live_component
+  :if={@live_action in [:edit, :new]}
+  id="podcast-edit"
+  module={AnaWeb.PodcastLive.PodcastEditComponent}
+  action={@live_action}
+  podcast={@podcast}
+/-->
