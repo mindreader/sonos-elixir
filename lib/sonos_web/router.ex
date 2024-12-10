@@ -25,7 +25,15 @@ defmodule SonosWeb.Router do
   scope "/event", SonosWeb do
     pipe_through :api
 
-    get "/", Events, :index
+    get "/", Events, :webhook
+    post "/", Events, :webhook
+    put "/", Events, :webhook
+  end
+
+  scope "/audio", SonosWeb do
+    pipe_through :api
+
+    get "/:filename", Audio, :fetch
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
