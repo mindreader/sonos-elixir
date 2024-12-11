@@ -13,7 +13,14 @@ defmodule Sonos.SSDP do
   end
 
   defmodule State do
-    defstruct socket: nil
+    defstruct
+      socket: nil,
+      # Map(host -> Device)
+      devices: %{}
+  end
+
+  defmodule Device do
+    defstruct bootid: nil, host: nil, location: nil
   end
 
   def init(_args) do
@@ -84,19 +91,18 @@ defmodule Sonos.SSDP do
 
     msg |> IO.inspect(label: "SSDP message")
 
-    # msg |> SSDP.response_parse |> Device.from_headers(ip) |> case do
-    #   {:ok, %Device{} = device} ->
-    #     uuid = device |> Device.uuid()
-
-    #     state = %State { state |
-    #       devices: state.devices |> Map.put(uuid, device)
-    #     }
-    #     Task.start(Sonos, :identify, [device])
-    #     {:noreply, state}
-
-    #   _ ->
-    #     {:noreply, state}
-    # end
+#    msg |> SSDP.response_parse |> Device.from_headers(ip) |> case do
+#      {:ok, %Device{} = device} ->
+#        uuid = device |> Device.uuid()
+#
+#        state = %State { state |
+#          devices: state.devices |> Map.put(uuid, device)
+#        }
+#        Task.start(Sonos, :identify, [device])
+#
+#      _ -> :ok
+#     end
+#
     {:noreply, state}
   end
 
