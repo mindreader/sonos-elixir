@@ -1,10 +1,10 @@
 [
   {
-    "name": "192.168.0.195 - Sonos Playbar - RINCON_347E5C76283501400",
+    "name": "Sonos Playbar",
     "services": [
       {
-        "control_url": "http://192.168.0.195:1400/AlarmClock/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/AlarmClock/Control",
+        "events_url": "/AlarmClock/Event",
         "scpd": {
           "actions": [
             {
@@ -470,12 +470,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/AlarmClock1.xml",
+        "scpd_url": "/xml/AlarmClock1.xml",
         "type": "urn:schemas-upnp-org:service:AlarmClock:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/MusicServices/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MusicServices/Control",
+        "events_url": "/MusicServices/Event",
         "scpd": {
           "actions": [
             {
@@ -566,12 +566,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/MusicServices1.xml",
+        "scpd_url": "/xml/MusicServices1.xml",
         "type": "urn:schemas-upnp-org:service:MusicServices:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/DeviceProperties/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/DeviceProperties/Control",
+        "events_url": "/DeviceProperties/Event",
         "scpd": {
           "actions": [
             {
@@ -968,244 +968,6 @@
             }
           ],
           "state_variables": {
-            "IsIdle": [
-              {
-                "data_type": "boolean",
-                "name": "IsIdle",
-                "send_events": true
-              }
-            ],
-            "A_ARG_TYPE_ConfigModeOptions": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_ConfigModeOptions",
-                "send_events": false
-              }
-            ],
-            "MicEnabled": [
-              {
-                "data_type": "ui4",
-                "name": "MicEnabled",
-                "send_events": true
-              }
-            ],
-            "BehindWifiExtender": [
-              {
-                "data_type": "ui4",
-                "name": "BehindWifiExtender",
-                "send_events": true
-              }
-            ],
-            "AutoplayIncludeLinkedZones": [
-              {
-                "data_type": "boolean",
-                "name": "AutoplayIncludeLinkedZones",
-                "send_events": false
-              }
-            ],
-            "ConfigMode": [
-              {
-                "data_type": "string",
-                "name": "ConfigMode",
-                "send_events": true
-              }
-            ],
-            "RoomCalibrationState": [
-              {
-                "data_type": "i4",
-                "name": "RoomCalibrationState",
-                "send_events": true
-              }
-            ],
-            "TargetRoomName": [
-              {
-                "data_type": "string",
-                "name": "TargetRoomName",
-                "send_events": false
-              }
-            ],
-            "AutoplayRoomUUID": [
-              {
-                "data_type": "string",
-                "name": "AutoplayRoomUUID",
-                "send_events": false
-              }
-            ],
-            "AutoplayVolume": [
-              {
-                "data_type": "ui2",
-                "name": "AutoplayVolume",
-                "send_events": false
-              }
-            ],
-            "HdmiCecAvailable": [
-              {
-                "data_type": "boolean",
-                "name": "HdmiCecAvailable",
-                "send_events": true
-              }
-            ],
-            "Flags": [
-              {
-                "data_type": "ui4",
-                "name": "Flags",
-                "send_events": false
-              }
-            ],
-            "KeepGrouped": [
-              {
-                "data_type": "boolean",
-                "name": "KeepGrouped",
-                "send_events": false
-              }
-            ],
-            "Icon": [
-              {
-                "data_type": "string",
-                "name": "Icon",
-                "send_events": true
-              }
-            ],
-            "VoiceConfigState": [
-              {
-                "data_type": "ui4",
-                "name": "VoiceConfigState",
-                "send_events": true
-              }
-            ],
-            "SatRoomUUID": [
-              {
-                "data_type": "string",
-                "name": "SatRoomUUID",
-                "send_events": false
-              }
-            ],
-            "IsZoneBridge": [
-              {
-                "data_type": "boolean",
-                "name": "IsZoneBridge",
-                "send_events": true
-              }
-            ],
-            "SerialNumber": [
-              {
-                "data_type": "string",
-                "name": "SerialNumber",
-                "send_events": false
-              }
-            ],
-            "ZoneName": [
-              {
-                "data_type": "string",
-                "name": "ZoneName",
-                "send_events": true
-              }
-            ],
-            "WifiEnabled": [
-              {
-                "data_type": "boolean",
-                "name": "WifiEnabled",
-                "send_events": true
-              }
-            ],
-            "SupportsAudioClip": [
-              {
-                "data_type": "boolean",
-                "name": "SupportsAudioClip",
-                "send_events": true
-              }
-            ],
-            "ExtraInfo": [
-              {
-                "data_type": "string",
-                "name": "ExtraInfo",
-                "send_events": false
-              }
-            ],
-            "HasConfiguredSSID": [
-              {
-                "data_type": "boolean",
-                "name": "HasConfiguredSSID",
-                "send_events": true
-              }
-            ],
-            "AutoplaySource": [
-              {
-                "data_type": "string",
-                "name": "AutoplaySource",
-                "send_events": false
-              }
-            ],
-            "HTAudioIn": [
-              {
-                "data_type": "ui4",
-                "name": "HTAudioIn",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_ConfigModeState": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_ConfigModeState",
-                "send_events": false
-              }
-            ],
-            "AvailableRoomCalibration": [
-              {
-                "data_type": "string",
-                "name": "AvailableRoomCalibration",
-                "send_events": true
-              }
-            ],
-            "AirPlayEnabled": [
-              {
-                "data_type": "boolean",
-                "name": "AirPlayEnabled",
-                "send_events": true
-              }
-            ],
-            "SupportsAudioIn": [
-              {
-                "data_type": "boolean",
-                "name": "SupportsAudioIn",
-                "send_events": true
-              }
-            ],
-            "ButtonLockState": [
-              {
-                "data_type": "string",
-                "name": "ButtonLockState",
-                "send_events": false
-              }
-            ],
-            "CopyrightInfo": [
-              {
-                "data_type": "string",
-                "name": "CopyrightInfo",
-                "send_events": false
-              }
-            ],
-            "ChannelMapSet": [
-              {
-                "data_type": "string",
-                "name": "ChannelMapSet",
-                "send_events": true
-              }
-            ],
-            "A_ARG_TYPE_RoomDetectionPlayId": [
-              {
-                "data_type": "ui4",
-                "name": "A_ARG_TYPE_RoomDetectionPlayId",
-                "send_events": false
-              }
-            ],
-            "IPAddress": [
-              {
-                "data_type": "string",
-                "name": "IPAddress",
-                "send_events": false
-              }
-            ],
             "Invisible": [
               {
                 "data_type": "boolean",
@@ -1213,17 +975,10 @@
                 "send_events": true
               }
             ],
-            "HTSatChanMapSet": [
+            "IPAddress": [
               {
                 "data_type": "string",
-                "name": "HTSatChanMapSet",
-                "send_events": true
-              }
-            ],
-            "MACAddress": [
-              {
-                "data_type": "string",
-                "name": "MACAddress",
+                "name": "IPAddress",
                 "send_events": false
               }
             ],
@@ -1234,88 +989,18 @@
                 "send_events": false
               }
             ],
-            "TVConfigurationError": [
-              {
-                "data_type": "boolean",
-                "name": "TVConfigurationError",
-                "send_events": true
-              }
-            ],
-            "MoreInfo": [
-              {
-                "data_type": "string",
-                "name": "MoreInfo",
-                "send_events": true
-              }
-            ],
-            "DisplaySoftwareVersion": [
-              {
-                "data_type": "string",
-                "name": "DisplaySoftwareVersion",
-                "send_events": false
-              }
-            ],
-            "ChannelFreq": [
-              {
-                "data_type": "ui4",
-                "name": "ChannelFreq",
-                "send_events": true
-              }
-            ],
-            "HardwareVersion": [
-              {
-                "data_type": "string",
-                "name": "HardwareVersion",
-                "send_events": false
-              }
-            ],
-            "SecureRegState": [
-              {
-                "data_type": "ui4",
-                "name": "SecureRegState",
-                "send_events": true
-              }
-            ],
-            "AutoplayUseVolume": [
-              {
-                "data_type": "boolean",
-                "name": "AutoplayUseVolume",
-                "send_events": false
-              }
-            ],
-            "Orientation": [
-              {
-                "data_type": "i4",
-                "name": "Orientation",
-                "send_events": true
-              }
-            ],
-            "HTBondedZoneCommitState": [
-              {
-                "data_type": "ui4",
-                "name": "HTBondedZoneCommitState",
-                "send_events": true
-              }
-            ],
-            "LEDState": [
-              {
-                "data_type": "string",
-                "name": "LEDState",
-                "send_events": false
-              }
-            ],
-            "Configuration": [
-              {
-                "data_type": "string",
-                "name": "Configuration",
-                "send_events": true
-              }
-            ],
             "WirelessLeafOnly": [
               {
                 "data_type": "boolean",
                 "name": "WirelessLeafOnly",
                 "send_events": true
+              }
+            ],
+            "Flags": [
+              {
+                "data_type": "ui4",
+                "name": "Flags",
+                "send_events": false
               }
             ],
             "A_ARG_TYPE_RoomDetectionChirpIfPlayingSwappableAudio": [
@@ -1325,10 +1010,38 @@
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_RoomDetectionChirpChannel": [
+            "ConfigMode": [
               {
-                "data_type": "ui2",
-                "name": "A_ARG_TYPE_RoomDetectionChirpChannel",
+                "data_type": "string",
+                "name": "ConfigMode",
+                "send_events": true
+              }
+            ],
+            "Configuration": [
+              {
+                "data_type": "string",
+                "name": "Configuration",
+                "send_events": true
+              }
+            ],
+            "HTSatChanMapSet": [
+              {
+                "data_type": "string",
+                "name": "HTSatChanMapSet",
+                "send_events": true
+              }
+            ],
+            "AutoplaySource": [
+              {
+                "data_type": "string",
+                "name": "AutoplaySource",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_RoomDetectionPlayId": [
+              {
+                "data_type": "ui4",
+                "name": "A_ARG_TYPE_RoomDetectionPlayId",
                 "send_events": false
               }
             ],
@@ -1339,6 +1052,41 @@
                 "send_events": true
               }
             ],
+            "SecureRegState": [
+              {
+                "data_type": "ui4",
+                "name": "SecureRegState",
+                "send_events": true
+              }
+            ],
+            "HasConfiguredSSID": [
+              {
+                "data_type": "boolean",
+                "name": "HasConfiguredSSID",
+                "send_events": true
+              }
+            ],
+            "Icon": [
+              {
+                "data_type": "string",
+                "name": "Icon",
+                "send_events": true
+              }
+            ],
+            "IsZoneBridge": [
+              {
+                "data_type": "boolean",
+                "name": "IsZoneBridge",
+                "send_events": true
+              }
+            ],
+            "AutoplayUseVolume": [
+              {
+                "data_type": "boolean",
+                "name": "AutoplayUseVolume",
+                "send_events": false
+              }
+            ],
             "SoftwareVersion": [
               {
                 "data_type": "string",
@@ -1346,11 +1094,102 @@
                 "send_events": false
               }
             ],
-            "HouseholdID": [
+            "SupportsAudioIn": [
+              {
+                "data_type": "boolean",
+                "name": "SupportsAudioIn",
+                "send_events": true
+              }
+            ],
+            "DisplaySoftwareVersion": [
               {
                 "data_type": "string",
-                "name": "HouseholdID",
+                "name": "DisplaySoftwareVersion",
                 "send_events": false
+              }
+            ],
+            "HTAudioIn": [
+              {
+                "data_type": "ui4",
+                "name": "HTAudioIn",
+                "send_events": false
+              }
+            ],
+            "AvailableRoomCalibration": [
+              {
+                "data_type": "string",
+                "name": "AvailableRoomCalibration",
+                "send_events": true
+              }
+            ],
+            "MACAddress": [
+              {
+                "data_type": "string",
+                "name": "MACAddress",
+                "send_events": false
+              }
+            ],
+            "HdmiCecAvailable": [
+              {
+                "data_type": "boolean",
+                "name": "HdmiCecAvailable",
+                "send_events": true
+              }
+            ],
+            "AutoplayRoomUUID": [
+              {
+                "data_type": "string",
+                "name": "AutoplayRoomUUID",
+                "send_events": false
+              }
+            ],
+            "ZoneName": [
+              {
+                "data_type": "string",
+                "name": "ZoneName",
+                "send_events": true
+              }
+            ],
+            "A_ARG_TYPE_ConfigModeState": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_ConfigModeState",
+                "send_events": false
+              }
+            ],
+            "WifiEnabled": [
+              {
+                "data_type": "boolean",
+                "name": "WifiEnabled",
+                "send_events": true
+              }
+            ],
+            "A_ARG_TYPE_ConfigModeOptions": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_ConfigModeOptions",
+                "send_events": false
+              }
+            ],
+            "AirPlayEnabled": [
+              {
+                "data_type": "boolean",
+                "name": "AirPlayEnabled",
+                "send_events": true
+              }
+            ],
+            "VoiceConfigState": [
+              {
+                "data_type": "ui4",
+                "name": "VoiceConfigState",
+                "send_events": true
+              }
+            ],
+            "TVConfigurationError": [
+              {
+                "data_type": "boolean",
+                "name": "TVConfigurationError",
+                "send_events": true
               }
             ],
             "SettingsReplicationState": [
@@ -1360,10 +1199,101 @@
                 "send_events": true
               }
             ],
-            "LastChangedPlayState": [
+            "HouseholdID": [
               {
                 "data_type": "string",
-                "name": "LastChangedPlayState",
+                "name": "HouseholdID",
+                "send_events": false
+              }
+            ],
+            "HTBondedZoneCommitState": [
+              {
+                "data_type": "ui4",
+                "name": "HTBondedZoneCommitState",
+                "send_events": true
+              }
+            ],
+            "Orientation": [
+              {
+                "data_type": "i4",
+                "name": "Orientation",
+                "send_events": true
+              }
+            ],
+            "TargetRoomName": [
+              {
+                "data_type": "string",
+                "name": "TargetRoomName",
+                "send_events": false
+              }
+            ],
+            "KeepGrouped": [
+              {
+                "data_type": "boolean",
+                "name": "KeepGrouped",
+                "send_events": false
+              }
+            ],
+            "ChannelMapSet": [
+              {
+                "data_type": "string",
+                "name": "ChannelMapSet",
+                "send_events": true
+              }
+            ],
+            "ExtraInfo": [
+              {
+                "data_type": "string",
+                "name": "ExtraInfo",
+                "send_events": false
+              }
+            ],
+            "AutoplayIncludeLinkedZones": [
+              {
+                "data_type": "boolean",
+                "name": "AutoplayIncludeLinkedZones",
+                "send_events": false
+              }
+            ],
+            "BehindWifiExtender": [
+              {
+                "data_type": "ui4",
+                "name": "BehindWifiExtender",
+                "send_events": true
+              }
+            ],
+            "AutoplayVolume": [
+              {
+                "data_type": "ui2",
+                "name": "AutoplayVolume",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_RoomDetectionChirpChannel": [
+              {
+                "data_type": "ui2",
+                "name": "A_ARG_TYPE_RoomDetectionChirpChannel",
+                "send_events": false
+              }
+            ],
+            "MicEnabled": [
+              {
+                "data_type": "ui4",
+                "name": "MicEnabled",
+                "send_events": true
+              }
+            ],
+            "HardwareVersion": [
+              {
+                "data_type": "string",
+                "name": "HardwareVersion",
+                "send_events": false
+              }
+            ],
+            "SupportsAudioClip": [
+              {
+                "data_type": "boolean",
+                "name": "SupportsAudioClip",
                 "send_events": true
               }
             ],
@@ -1374,21 +1304,91 @@
                 "send_events": true
               }
             ],
+            "RoomCalibrationState": [
+              {
+                "data_type": "i4",
+                "name": "RoomCalibrationState",
+                "send_events": true
+              }
+            ],
+            "SerialNumber": [
+              {
+                "data_type": "string",
+                "name": "SerialNumber",
+                "send_events": false
+              }
+            ],
+            "ChannelFreq": [
+              {
+                "data_type": "ui4",
+                "name": "ChannelFreq",
+                "send_events": true
+              }
+            ],
+            "LEDState": [
+              {
+                "data_type": "string",
+                "name": "LEDState",
+                "send_events": false
+              }
+            ],
+            "IsIdle": [
+              {
+                "data_type": "boolean",
+                "name": "IsIdle",
+                "send_events": true
+              }
+            ],
+            "SatRoomUUID": [
+              {
+                "data_type": "string",
+                "name": "SatRoomUUID",
+                "send_events": false
+              }
+            ],
+            "CopyrightInfo": [
+              {
+                "data_type": "string",
+                "name": "CopyrightInfo",
+                "send_events": false
+              }
+            ],
             "A_ARG_TYPE_RoomDetectionDurationMilliseconds": [
               {
                 "data_type": "ui4",
                 "name": "A_ARG_TYPE_RoomDetectionDurationMilliseconds",
                 "send_events": false
               }
+            ],
+            "ButtonLockState": [
+              {
+                "data_type": "string",
+                "name": "ButtonLockState",
+                "send_events": false
+              }
+            ],
+            "MoreInfo": [
+              {
+                "data_type": "string",
+                "name": "MoreInfo",
+                "send_events": true
+              }
+            ],
+            "LastChangedPlayState": [
+              {
+                "data_type": "string",
+                "name": "LastChangedPlayState",
+                "send_events": true
+              }
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/DeviceProperties1.xml",
+        "scpd_url": "/xml/DeviceProperties1.xml",
         "type": "urn:schemas-upnp-org:service:DeviceProperties:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/SystemProperties/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/SystemProperties/Control",
+        "events_url": "/SystemProperties/Event",
         "scpd": {
           "actions": [
             {
@@ -1858,12 +1858,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/SystemProperties1.xml",
+        "scpd_url": "/xml/SystemProperties1.xml",
         "type": "urn:schemas-upnp-org:service:SystemProperties:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/ZoneGroupTopology/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/ZoneGroupTopology/Control",
+        "events_url": "/ZoneGroupTopology/Event",
         "scpd": {
           "actions": [
             {
@@ -2181,12 +2181,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/ZoneGroupTopology1.xml",
+        "scpd_url": "/xml/ZoneGroupTopology1.xml",
         "type": "urn:schemas-upnp-org:service:ZoneGroupTopology:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/GroupManagement/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/GroupManagement/Control",
+        "events_url": "/GroupManagement/Event",
         "scpd": {
           "actions": [
             {
@@ -2339,12 +2339,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/GroupManagement1.xml",
+        "scpd_url": "/xml/GroupManagement1.xml",
         "type": "urn:schemas-upnp-org:service:GroupManagement:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/HTControl/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/HTControl/Control",
+        "events_url": "/HTControl/Event",
         "scpd": {
           "actions": [
             {
@@ -2484,12 +2484,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/HTControl1.xml",
+        "scpd_url": "/xml/HTControl1.xml",
         "type": "urn:schemas-upnp-org:service:HTControl:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/QPlay/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/QPlay/Control",
+        "events_url": "/QPlay/Event",
         "scpd": {
           "actions": [
             {
@@ -2547,18 +2547,18 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/QPlay1.xml",
+        "scpd_url": "/xml/QPlay1.xml",
         "type": "urn:schemas-tencent-com:service:QPlay:1"
       }
     ],
     "type": "urn:schemas-upnp-org:device:ZonePlayer:1"
   },
   {
-    "name": "192.168.0.195 - Sonos Playbar Media Server - RINCON_347E5C76283501400",
+    "name": "Sonos Playbar",
     "services": [
       {
-        "control_url": "http://192.168.0.195:1400/MediaServer/ContentDirectory/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaServer/ContentDirectory/Control",
+        "events_url": "/MediaServer/ContentDirectory/Event",
         "scpd": {
           "actions": [
             {
@@ -3005,12 +3005,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/ContentDirectory1.xml",
+        "scpd_url": "/xml/ContentDirectory1.xml",
         "type": "urn:schemas-upnp-org:service:ContentDirectory:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/MediaServer/ConnectionManager/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaServer/ConnectionManager/Control",
+        "events_url": "/MediaServer/ConnectionManager/Event",
         "scpd": {
           "actions": [
             {
@@ -3150,18 +3150,18 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/ConnectionManager1.xml",
+        "scpd_url": "/xml/ConnectionManager1.xml",
         "type": "urn:schemas-upnp-org:service:ConnectionManager:1"
       }
     ],
     "type": "urn:schemas-upnp-org:device:MediaServer:1"
   },
   {
-    "name": "Bedroom - Sonos Playbar Media Renderer - RINCON_347E5C76283501400",
+    "name": "Sonos Playbar",
     "services": [
       {
-        "control_url": "http://192.168.0.195:1400/MediaRenderer/RenderingControl/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaRenderer/RenderingControl/Control",
+        "events_url": "/MediaRenderer/RenderingControl/Event",
         "scpd": {
           "actions": [
             {
@@ -3655,143 +3655,10 @@
             }
           ],
           "state_variables": {
-            "EQValue": [
-              {
-                "data_type": "i2",
-                "name": "EQValue",
-                "send_events": false
-              }
-            ],
-            "SubPolarity": [
-              {
-                "data_type": "string",
-                "name": "SubPolarity",
-                "send_events": false
-              }
-            ],
-            "MusicSurroundLevel": [
-              {
-                "data_type": "string",
-                "name": "MusicSurroundLevel",
-                "send_events": false
-              }
-            ],
-            "RoomCalibrationEnabled": [
-              {
-                "data_type": "boolean",
-                "name": "RoomCalibrationEnabled",
-                "send_events": false
-              }
-            ],
-            "SpeakerSize": [
-              {
-                "data_type": "ui4",
-                "name": "SpeakerSize",
-                "send_events": false
-              }
-            ],
-            "SpeechEnhanceEnabled": [
-              {
-                "data_type": "boolean",
-                "name": "SpeechEnhanceEnabled",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_Channel": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_Channel",
-                "send_events": false
-              }
-            ],
-            "DialogLevel": [
-              {
-                "data_type": "string",
-                "name": "DialogLevel",
-                "send_events": false
-              }
-            ],
-            "AudioDelay": [
-              {
-                "data_type": "string",
-                "name": "AudioDelay",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_RampTimeSeconds": [
-              {
-                "data_type": "ui4",
-                "name": "A_ARG_TYPE_RampTimeSeconds",
-                "send_events": false
-              }
-            ],
-            "Bass": [
-              {
-                "data_type": "i2",
-                "name": "Bass",
-                "send_events": false
-              }
-            ],
             "Treble": [
               {
                 "data_type": "i2",
                 "name": "Treble",
-                "send_events": false
-              }
-            ],
-            "PresetNameList": [
-              {
-                "data_type": "string",
-                "name": "PresetNameList",
-                "send_events": false
-              }
-            ],
-            "Mute": [
-              {
-                "data_type": "boolean",
-                "name": "Mute",
-                "send_events": false
-              }
-            ],
-            "SubCrossover": [
-              {
-                "data_type": "string",
-                "name": "SubCrossover",
-                "send_events": false
-              }
-            ],
-            "RoomCalibrationID": [
-              {
-                "data_type": "string",
-                "name": "RoomCalibrationID",
-                "send_events": false
-              }
-            ],
-            "RoomCalibrationCoefficients": [
-              {
-                "data_type": "string",
-                "name": "RoomCalibrationCoefficients",
-                "send_events": false
-              }
-            ],
-            "NightMode": [
-              {
-                "data_type": "boolean",
-                "name": "NightMode",
-                "send_events": false
-              }
-            ],
-            "SurroundMode": [
-              {
-                "data_type": "string",
-                "name": "SurroundMode",
-                "send_events": false
-              }
-            ],
-            "RoomCalibrationCalibrationMode": [
-              {
-                "data_type": "string",
-                "name": "RoomCalibrationCalibrationMode",
                 "send_events": false
               }
             ],
@@ -3802,101 +3669,24 @@
                 "send_events": false
               }
             ],
-            "SubGain": [
-              {
-                "data_type": "string",
-                "name": "SubGain",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_VolumeAdjustment": [
-              {
-                "data_type": "i4",
-                "name": "A_ARG_TYPE_VolumeAdjustment",
-                "send_events": false
-              }
-            ],
-            "SurroundLevel": [
-              {
-                "data_type": "string",
-                "name": "SurroundLevel",
-                "send_events": false
-              }
-            ],
-            "AudioDelayLeftRear": [
-              {
-                "data_type": "string",
-                "name": "AudioDelayLeftRear",
-                "send_events": false
-              }
-            ],
-            "Loudness": [
+            "Mute": [
               {
                 "data_type": "boolean",
-                "name": "Loudness",
+                "name": "Mute",
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_ChannelMap": [
+            "NightMode": [
+              {
+                "data_type": "boolean",
+                "name": "NightMode",
+                "send_events": false
+              }
+            ],
+            "SubPolarity": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_ChannelMap",
-                "send_events": false
-              }
-            ],
-            "Volume": [
-              {
-                "data_type": "ui2",
-                "name": "Volume",
-                "send_events": false
-              }
-            ],
-            "SupportsOutputFixed": [
-              {
-                "data_type": "boolean",
-                "name": "SupportsOutputFixed",
-                "send_events": false
-              }
-            ],
-            "HeadphoneConnected": [
-              {
-                "data_type": "boolean",
-                "name": "HeadphoneConnected",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_ProgramURI": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_ProgramURI",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_RightVolume": [
-              {
-                "data_type": "ui2",
-                "name": "A_ARG_TYPE_RightVolume",
-                "send_events": false
-              }
-            ],
-            "LastChange": [
-              {
-                "data_type": "string",
-                "name": "LastChange",
-                "send_events": true
-              }
-            ],
-            "RoomCalibrationAvailable": [
-              {
-                "data_type": "boolean",
-                "name": "RoomCalibrationAvailable",
-                "send_events": false
-              }
-            ],
-            "SubEnabled": [
-              {
-                "data_type": "boolean",
-                "name": "SubEnabled",
+                "name": "SubPolarity",
                 "send_events": false
               }
             ],
@@ -3907,24 +3697,10 @@
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_ResetVolumeAfter": [
-              {
-                "data_type": "boolean",
-                "name": "A_ARG_TYPE_ResetVolumeAfter",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_RampType": [
+            "SubCrossover": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_RampType",
-                "send_events": false
-              }
-            ],
-            "OutputFixed": [
-              {
-                "data_type": "boolean",
-                "name": "OutputFixed",
+                "name": "SubCrossover",
                 "send_events": false
               }
             ],
@@ -3935,17 +3711,31 @@
                 "send_events": false
               }
             ],
-            "SurroundEnabled": [
+            "LastChange": [
               {
-                "data_type": "boolean",
-                "name": "SurroundEnabled",
+                "data_type": "string",
+                "name": "LastChange",
+                "send_events": true
+              }
+            ],
+            "PresetNameList": [
+              {
+                "data_type": "string",
+                "name": "PresetNameList",
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_InstanceID": [
+            "RoomCalibrationAvailable": [
               {
-                "data_type": "ui4",
-                "name": "A_ARG_TYPE_InstanceID",
+                "data_type": "boolean",
+                "name": "RoomCalibrationAvailable",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_EQType": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_EQType",
                 "send_events": false
               }
             ],
@@ -3956,21 +3746,231 @@
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_EQType": [
+            "SupportsOutputFixed": [
+              {
+                "data_type": "boolean",
+                "name": "SupportsOutputFixed",
+                "send_events": false
+              }
+            ],
+            "Loudness": [
+              {
+                "data_type": "boolean",
+                "name": "Loudness",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_RampTimeSeconds": [
+              {
+                "data_type": "ui4",
+                "name": "A_ARG_TYPE_RampTimeSeconds",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_RampType": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_EQType",
+                "name": "A_ARG_TYPE_RampType",
+                "send_events": false
+              }
+            ],
+            "SpeechEnhanceEnabled": [
+              {
+                "data_type": "boolean",
+                "name": "SpeechEnhanceEnabled",
+                "send_events": false
+              }
+            ],
+            "AudioDelay": [
+              {
+                "data_type": "string",
+                "name": "AudioDelay",
+                "send_events": false
+              }
+            ],
+            "DialogLevel": [
+              {
+                "data_type": "string",
+                "name": "DialogLevel",
+                "send_events": false
+              }
+            ],
+            "RoomCalibrationCoefficients": [
+              {
+                "data_type": "string",
+                "name": "RoomCalibrationCoefficients",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_RightVolume": [
+              {
+                "data_type": "ui2",
+                "name": "A_ARG_TYPE_RightVolume",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_VolumeAdjustment": [
+              {
+                "data_type": "i4",
+                "name": "A_ARG_TYPE_VolumeAdjustment",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_ChannelMap": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_ChannelMap",
+                "send_events": false
+              }
+            ],
+            "SurroundEnabled": [
+              {
+                "data_type": "boolean",
+                "name": "SurroundEnabled",
+                "send_events": false
+              }
+            ],
+            "HeadphoneConnected": [
+              {
+                "data_type": "boolean",
+                "name": "HeadphoneConnected",
+                "send_events": false
+              }
+            ],
+            "SurroundLevel": [
+              {
+                "data_type": "string",
+                "name": "SurroundLevel",
+                "send_events": false
+              }
+            ],
+            "RoomCalibrationID": [
+              {
+                "data_type": "string",
+                "name": "RoomCalibrationID",
+                "send_events": false
+              }
+            ],
+            "MusicSurroundLevel": [
+              {
+                "data_type": "string",
+                "name": "MusicSurroundLevel",
+                "send_events": false
+              }
+            ],
+            "Volume": [
+              {
+                "data_type": "ui2",
+                "name": "Volume",
+                "send_events": false
+              }
+            ],
+            "RoomCalibrationEnabled": [
+              {
+                "data_type": "boolean",
+                "name": "RoomCalibrationEnabled",
+                "send_events": false
+              }
+            ],
+            "SurroundMode": [
+              {
+                "data_type": "string",
+                "name": "SurroundMode",
+                "send_events": false
+              }
+            ],
+            "AudioDelayLeftRear": [
+              {
+                "data_type": "string",
+                "name": "AudioDelayLeftRear",
+                "send_events": false
+              }
+            ],
+            "RoomCalibrationCalibrationMode": [
+              {
+                "data_type": "string",
+                "name": "RoomCalibrationCalibrationMode",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_InstanceID": [
+              {
+                "data_type": "ui4",
+                "name": "A_ARG_TYPE_InstanceID",
+                "send_events": false
+              }
+            ],
+            "OutputFixed": [
+              {
+                "data_type": "boolean",
+                "name": "OutputFixed",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_ProgramURI": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_ProgramURI",
+                "send_events": false
+              }
+            ],
+            "EQValue": [
+              {
+                "data_type": "i2",
+                "name": "EQValue",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_Channel": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_Channel",
+                "send_events": false
+              }
+            ],
+            "SubGain": [
+              {
+                "data_type": "string",
+                "name": "SubGain",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_ResetVolumeAfter": [
+              {
+                "data_type": "boolean",
+                "name": "A_ARG_TYPE_ResetVolumeAfter",
+                "send_events": false
+              }
+            ],
+            "SubEnabled": [
+              {
+                "data_type": "boolean",
+                "name": "SubEnabled",
+                "send_events": false
+              }
+            ],
+            "SpeakerSize": [
+              {
+                "data_type": "ui4",
+                "name": "SpeakerSize",
+                "send_events": false
+              }
+            ],
+            "Bass": [
+              {
+                "data_type": "i2",
+                "name": "Bass",
                 "send_events": false
               }
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/RenderingControl1.xml",
+        "scpd_url": "/xml/RenderingControl1.xml",
         "type": "urn:schemas-upnp-org:service:RenderingControl:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/MediaRenderer/ConnectionManager/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaRenderer/ConnectionManager/Control",
+        "events_url": "/MediaRenderer/ConnectionManager/Event",
         "scpd": {
           "actions": [
             {
@@ -4110,12 +4110,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/ConnectionManager1.xml",
+        "scpd_url": "/xml/ConnectionManager1.xml",
         "type": "urn:schemas-upnp-org:service:ConnectionManager:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/MediaRenderer/AVTransport/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaRenderer/AVTransport/Control",
+        "events_url": "/MediaRenderer/AVTransport/Event",
         "scpd": {
           "actions": [
             {
@@ -5137,31 +5137,10 @@
             }
           ],
           "state_variables": {
-            "NextTrackURI": [
+            "NextTrackMetaData": [
               {
                 "data_type": "string",
-                "name": "NextTrackURI",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_VLIState": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_VLIState",
-                "send_events": false
-              }
-            ],
-            "TransportErrorURI": [
-              {
-                "data_type": "string",
-                "name": "TransportErrorURI",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_PlayerID": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_PlayerID",
+                "name": "NextTrackMetaData",
                 "send_events": false
               }
             ],
@@ -5172,213 +5151,10 @@
                 "send_events": false
               }
             ],
-            "CurrentPlayMode": [
+            "CurrentTrackMetaData": [
               {
                 "data_type": "string",
-                "name": "CurrentPlayMode",
-                "send_events": false
-              }
-            ],
-            "CurrentValidPlayModes": [
-              {
-                "data_type": "string",
-                "name": "CurrentValidPlayModes",
-                "send_events": false
-              }
-            ],
-            "NextAVTransportURI": [
-              {
-                "data_type": "string",
-                "name": "NextAVTransportURI",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_StreamRestartState": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_StreamRestartState",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_URI": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_URI",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_ISO8601Time": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_ISO8601Time",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_SleepTimerState": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_SleepTimerState",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_GroupID": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_GroupID",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_TrackNumber": [
-              {
-                "data_type": "ui4",
-                "name": "A_ARG_TYPE_TrackNumber",
-                "send_events": false
-              }
-            ],
-            "AVTransportURIMetaData": [
-              {
-                "data_type": "string",
-                "name": "AVTransportURIMetaData",
-                "send_events": false
-              }
-            ],
-            "AbsoluteCounterPosition": [
-              {
-                "data_type": "i4",
-                "name": "AbsoluteCounterPosition",
-                "send_events": false
-              }
-            ],
-            "CurrentTrackURI": [
-              {
-                "data_type": "string",
-                "name": "CurrentTrackURI",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_SeekTarget": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_SeekTarget",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_URIMetaData": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_URIMetaData",
-                "send_events": false
-              }
-            ],
-            "PossibleRecordQualityModes": [
-              {
-                "data_type": "string",
-                "name": "PossibleRecordQualityModes",
-                "send_events": false
-              }
-            ],
-            "MuseSessions": [
-              {
-                "data_type": "string",
-                "name": "MuseSessions",
-                "send_events": false
-              }
-            ],
-            "EnqueuedTransportURIMetaData": [
-              {
-                "data_type": "string",
-                "name": "EnqueuedTransportURIMetaData",
-                "send_events": false
-              }
-            ],
-            "AlarmRunning": [
-              {
-                "data_type": "boolean",
-                "name": "AlarmRunning",
-                "send_events": false
-              }
-            ],
-            "DirectControlIsSuspended": [
-              {
-                "data_type": "boolean",
-                "name": "DirectControlIsSuspended",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_NumTracksChange": [
-              {
-                "data_type": "i4",
-                "name": "A_ARG_TYPE_NumTracksChange",
-                "send_events": false
-              }
-            ],
-            "CurrentRecordQualityMode": [
-              {
-                "data_type": "string",
-                "name": "CurrentRecordQualityMode",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_AlarmIncludeLinkedZones": [
-              {
-                "data_type": "boolean",
-                "name": "A_ARG_TYPE_AlarmIncludeLinkedZones",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_CurrentAVTransportURI": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_CurrentAVTransportURI",
-                "send_events": false
-              }
-            ],
-            "CurrentTransportActions": [
-              {
-                "data_type": "string",
-                "name": "CurrentTransportActions",
-                "send_events": false
-              }
-            ],
-            "AlarmLoggedStartTime": [
-              {
-                "data_type": "string",
-                "name": "AlarmLoggedStartTime",
-                "send_events": false
-              }
-            ],
-            "SleepTimerGeneration": [
-              {
-                "data_type": "ui4",
-                "name": "SleepTimerGeneration",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_AlarmVolume": [
-              {
-                "data_type": "ui2",
-                "name": "A_ARG_TYPE_AlarmVolume",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_ObjectID": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_ObjectID",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_ResumePlayback": [
-              {
-                "data_type": "boolean",
-                "name": "A_ARG_TYPE_ResumePlayback",
-                "send_events": false
-              }
-            ],
-            "DirectControlClientID": [
-              {
-                "data_type": "string",
-                "name": "DirectControlClientID",
+                "name": "CurrentTrackMetaData",
                 "send_events": false
               }
             ],
@@ -5389,87 +5165,10 @@
                 "send_events": false
               }
             ],
-            "NumberOfTracks": [
-              {
-                "data_type": "ui4",
-                "name": "NumberOfTracks",
-                "send_events": false
-              }
-            ],
-            "SnoozeRunning": [
-              {
-                "data_type": "boolean",
-                "name": "SnoozeRunning",
-                "send_events": false
-              }
-            ],
-            "CurrentSection": [
-              {
-                "data_type": "ui4",
-                "name": "CurrentSection",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_SavedQueueTitle": [
+            "A_ARG_TYPE_SeekTarget": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_SavedQueueTitle",
-                "send_events": false
-              }
-            ],
-            "RelativeTimePosition": [
-              {
-                "data_type": "string",
-                "name": "RelativeTimePosition",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_RejoinGroup": [
-              {
-                "data_type": "boolean",
-                "name": "A_ARG_TYPE_RejoinGroup",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_LIST_URIMetaData": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_LIST_URIMetaData",
-                "send_events": false
-              }
-            ],
-            "NextTrackMetaData": [
-              {
-                "data_type": "string",
-                "name": "NextTrackMetaData",
-                "send_events": false
-              }
-            ],
-            "NextAVTransportURIMetaData": [
-              {
-                "data_type": "string",
-                "name": "NextAVTransportURIMetaData",
-                "send_events": false
-              }
-            ],
-            "AbsoluteTimePosition": [
-              {
-                "data_type": "string",
-                "name": "AbsoluteTimePosition",
-                "send_events": false
-              }
-            ],
-            "AlarmIDRunning": [
-              {
-                "data_type": "ui4",
-                "name": "AlarmIDRunning",
-                "send_events": false
-              }
-            ],
-            "TransportErrorHttpCode": [
-              {
-                "data_type": "string",
-                "name": "TransportErrorHttpCode",
+                "name": "A_ARG_TYPE_SeekTarget",
                 "send_events": false
               }
             ],
@@ -5480,66 +5179,10 @@
                 "send_events": false
               }
             ],
-            "CurrentTrackMetaData": [
+            "CurrentMediaDuration": [
               {
                 "data_type": "string",
-                "name": "CurrentTrackMetaData",
-                "send_events": false
-              }
-            ],
-            "RecordStorageMedium": [
-              {
-                "data_type": "string",
-                "name": "RecordStorageMedium",
-                "send_events": false
-              }
-            ],
-            "TransportPlaySpeed": [
-              {
-                "data_type": "string",
-                "name": "TransportPlaySpeed",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_AlarmState": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_AlarmState",
-                "send_events": false
-              }
-            ],
-            "EnqueuedTransportURI": [
-              {
-                "data_type": "string",
-                "name": "EnqueuedTransportURI",
-                "send_events": false
-              }
-            ],
-            "CurrentCrossfadeMode": [
-              {
-                "data_type": "boolean",
-                "name": "CurrentCrossfadeMode",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_NumTracks": [
-              {
-                "data_type": "ui4",
-                "name": "A_ARG_TYPE_NumTracks",
-                "send_events": false
-              }
-            ],
-            "RecordMediumWriteStatus": [
-              {
-                "data_type": "string",
-                "name": "RecordMediumWriteStatus",
-                "send_events": false
-              }
-            ],
-            "PlaybackStorageMedium": [
-              {
-                "data_type": "string",
-                "name": "PlaybackStorageMedium",
+                "name": "CurrentMediaDuration",
                 "send_events": false
               }
             ],
@@ -5550,10 +5193,136 @@
                 "send_events": true
               }
             ],
-            "A_ARG_TYPE_SeekMode": [
+            "AbsoluteCounterPosition": [
+              {
+                "data_type": "i4",
+                "name": "AbsoluteCounterPosition",
+                "send_events": false
+              }
+            ],
+            "NextAVTransportURIMetaData": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_SeekMode",
+                "name": "NextAVTransportURIMetaData",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_EnqueueAsNext": [
+              {
+                "data_type": "boolean",
+                "name": "A_ARG_TYPE_EnqueueAsNext",
+                "send_events": false
+              }
+            ],
+            "QueueUpdateID": [
+              {
+                "data_type": "ui4",
+                "name": "QueueUpdateID",
+                "send_events": false
+              }
+            ],
+            "CurrentTransportActions": [
+              {
+                "data_type": "string",
+                "name": "CurrentTransportActions",
+                "send_events": false
+              }
+            ],
+            "CurrentValidPlayModes": [
+              {
+                "data_type": "string",
+                "name": "CurrentValidPlayModes",
+                "send_events": false
+              }
+            ],
+            "TransportErrorHttpCode": [
+              {
+                "data_type": "string",
+                "name": "TransportErrorHttpCode",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_URI": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_URI",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_AlarmVolume": [
+              {
+                "data_type": "ui2",
+                "name": "A_ARG_TYPE_AlarmVolume",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_TransportSettings": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_TransportSettings",
+                "send_events": false
+              }
+            ],
+            "TransportPlaySpeed": [
+              {
+                "data_type": "string",
+                "name": "TransportPlaySpeed",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_TrackNumber": [
+              {
+                "data_type": "ui4",
+                "name": "A_ARG_TYPE_TrackNumber",
+                "send_events": false
+              }
+            ],
+            "PlaybackStorageMedium": [
+              {
+                "data_type": "string",
+                "name": "PlaybackStorageMedium",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_StreamRestartState": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_StreamRestartState",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_RestartSink": [
+              {
+                "data_type": "boolean",
+                "name": "A_ARG_TYPE_RestartSink",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_SourceState": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_SourceState",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_AlarmState": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_AlarmState",
+                "send_events": false
+              }
+            ],
+            "PossiblePlaybackStorageMedia": [
+              {
+                "data_type": "string",
+                "name": "PossiblePlaybackStorageMedia",
+                "send_events": false
+              }
+            ],
+            "EnqueuedTransportURIMetaData": [
+              {
+                "data_type": "string",
+                "name": "EnqueuedTransportURIMetaData",
                 "send_events": false
               }
             ],
@@ -5561,6 +5330,202 @@
               {
                 "data_type": "string",
                 "name": "PossibleRecordStorageMedia",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_URIMetaData": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_URIMetaData",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_AlarmIncludeLinkedZones": [
+              {
+                "data_type": "boolean",
+                "name": "A_ARG_TYPE_AlarmIncludeLinkedZones",
+                "send_events": false
+              }
+            ],
+            "CurrentRecordQualityMode": [
+              {
+                "data_type": "string",
+                "name": "CurrentRecordQualityMode",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_RejoinGroup": [
+              {
+                "data_type": "boolean",
+                "name": "A_ARG_TYPE_RejoinGroup",
+                "send_events": false
+              }
+            ],
+            "TransportErrorURI": [
+              {
+                "data_type": "string",
+                "name": "TransportErrorURI",
+                "send_events": false
+              }
+            ],
+            "CurrentTrackURI": [
+              {
+                "data_type": "string",
+                "name": "CurrentTrackURI",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_PlayerID": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_PlayerID",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_SeekMode": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_SeekMode",
+                "send_events": false
+              }
+            ],
+            "DirectControlClientID": [
+              {
+                "data_type": "string",
+                "name": "DirectControlClientID",
+                "send_events": false
+              }
+            ],
+            "CurrentCrossfadeMode": [
+              {
+                "data_type": "boolean",
+                "name": "CurrentCrossfadeMode",
+                "send_events": false
+              }
+            ],
+            "TransportState": [
+              {
+                "data_type": "string",
+                "name": "TransportState",
+                "send_events": false
+              }
+            ],
+            "PossibleRecordQualityModes": [
+              {
+                "data_type": "string",
+                "name": "PossibleRecordQualityModes",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_LIST_URIMetaData": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_LIST_URIMetaData",
+                "send_events": false
+              }
+            ],
+            "NextTrackURI": [
+              {
+                "data_type": "string",
+                "name": "NextTrackURI",
+                "send_events": false
+              }
+            ],
+            "AVTransportURI": [
+              {
+                "data_type": "string",
+                "name": "AVTransportURI",
+                "send_events": false
+              }
+            ],
+            "AlarmRunning": [
+              {
+                "data_type": "boolean",
+                "name": "AlarmRunning",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_NumTracks": [
+              {
+                "data_type": "ui4",
+                "name": "A_ARG_TYPE_NumTracks",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_GroupID": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_GroupID",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_LIST_URI": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_LIST_URI",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_TrackList": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_TrackList",
+                "send_events": false
+              }
+            ],
+            "RestartPending": [
+              {
+                "data_type": "boolean",
+                "name": "RestartPending",
+                "send_events": false
+              }
+            ],
+            "TransportErrorHttpHeaders": [
+              {
+                "data_type": "string",
+                "name": "TransportErrorHttpHeaders",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_CurrentAVTransportURI": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_CurrentAVTransportURI",
+                "send_events": false
+              }
+            ],
+            "SleepTimerGeneration": [
+              {
+                "data_type": "ui4",
+                "name": "SleepTimerGeneration",
+                "send_events": false
+              }
+            ],
+            "AVTransportURIMetaData": [
+              {
+                "data_type": "string",
+                "name": "AVTransportURIMetaData",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_InstanceID": [
+              {
+                "data_type": "ui4",
+                "name": "A_ARG_TYPE_InstanceID",
+                "send_events": false
+              }
+            ],
+            "CurrentSection": [
+              {
+                "data_type": "ui4",
+                "name": "CurrentSection",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_VLIState": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_VLIState",
                 "send_events": false
               }
             ],
@@ -5578,17 +5543,59 @@
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_EnqueueAsNext": [
+            "AlarmIDRunning": [
               {
-                "data_type": "boolean",
-                "name": "A_ARG_TYPE_EnqueueAsNext",
+                "data_type": "ui4",
+                "name": "AlarmIDRunning",
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_LIST_URI": [
+            "A_ARG_TYPE_SavedQueueTitle": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_LIST_URI",
+                "name": "A_ARG_TYPE_SavedQueueTitle",
+                "send_events": false
+              }
+            ],
+            "DirectControlIsSuspended": [
+              {
+                "data_type": "boolean",
+                "name": "DirectControlIsSuspended",
+                "send_events": false
+              }
+            ],
+            "NextAVTransportURI": [
+              {
+                "data_type": "string",
+                "name": "NextAVTransportURI",
+                "send_events": false
+              }
+            ],
+            "SnoozeRunning": [
+              {
+                "data_type": "boolean",
+                "name": "SnoozeRunning",
+                "send_events": false
+              }
+            ],
+            "MuseSessions": [
+              {
+                "data_type": "string",
+                "name": "MuseSessions",
+                "send_events": false
+              }
+            ],
+            "CurrentPlayMode": [
+              {
+                "data_type": "string",
+                "name": "CurrentPlayMode",
+                "send_events": false
+              }
+            ],
+            "AlarmLoggedStartTime": [
+              {
+                "data_type": "string",
+                "name": "AlarmLoggedStartTime",
                 "send_events": false
               }
             ],
@@ -5599,38 +5606,17 @@
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_SourceState": [
+            "A_ARG_TYPE_ISO8601Time": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_SourceState",
+                "name": "A_ARG_TYPE_ISO8601Time",
                 "send_events": false
               }
             ],
-            "CurrentTrack": [
+            "A_ARG_TYPE_NumTracksChange": [
               {
-                "data_type": "ui4",
-                "name": "CurrentTrack",
-                "send_events": false
-              }
-            ],
-            "RestartPending": [
-              {
-                "data_type": "boolean",
-                "name": "RestartPending",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_MemberID": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_MemberID",
-                "send_events": false
-              }
-            ],
-            "TransportErrorHttpHeaders": [
-              {
-                "data_type": "string",
-                "name": "TransportErrorHttpHeaders",
+                "data_type": "i4",
+                "name": "A_ARG_TYPE_NumTracksChange",
                 "send_events": false
               }
             ],
@@ -5641,6 +5627,34 @@
                 "send_events": false
               }
             ],
+            "A_ARG_TYPE_SleepTimerState": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_SleepTimerState",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_ResumePlayback": [
+              {
+                "data_type": "boolean",
+                "name": "A_ARG_TYPE_ResumePlayback",
+                "send_events": false
+              }
+            ],
+            "RecordMediumWriteStatus": [
+              {
+                "data_type": "string",
+                "name": "RecordMediumWriteStatus",
+                "send_events": false
+              }
+            ],
+            "CurrentTrack": [
+              {
+                "data_type": "ui4",
+                "name": "CurrentTrack",
+                "send_events": false
+              }
+            ],
             "CurrentTrackDuration": [
               {
                 "data_type": "string",
@@ -5648,77 +5662,63 @@
                 "send_events": false
               }
             ],
-            "QueueUpdateID": [
+            "EnqueuedTransportURI": [
+              {
+                "data_type": "string",
+                "name": "EnqueuedTransportURI",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_ObjectID": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_ObjectID",
+                "send_events": false
+              }
+            ],
+            "A_ARG_TYPE_MemberID": [
+              {
+                "data_type": "string",
+                "name": "A_ARG_TYPE_MemberID",
+                "send_events": false
+              }
+            ],
+            "NumberOfTracks": [
               {
                 "data_type": "ui4",
-                "name": "QueueUpdateID",
+                "name": "NumberOfTracks",
                 "send_events": false
               }
             ],
-            "CurrentMediaDuration": [
+            "RecordStorageMedium": [
               {
                 "data_type": "string",
-                "name": "CurrentMediaDuration",
+                "name": "RecordStorageMedium",
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_RestartSink": [
-              {
-                "data_type": "boolean",
-                "name": "A_ARG_TYPE_RestartSink",
-                "send_events": false
-              }
-            ],
-            "PossiblePlaybackStorageMedia": [
+            "AbsoluteTimePosition": [
               {
                 "data_type": "string",
-                "name": "PossiblePlaybackStorageMedia",
+                "name": "AbsoluteTimePosition",
                 "send_events": false
               }
             ],
-            "A_ARG_TYPE_InstanceID": [
-              {
-                "data_type": "ui4",
-                "name": "A_ARG_TYPE_InstanceID",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_TransportSettings": [
+            "RelativeTimePosition": [
               {
                 "data_type": "string",
-                "name": "A_ARG_TYPE_TransportSettings",
-                "send_events": false
-              }
-            ],
-            "A_ARG_TYPE_TrackList": [
-              {
-                "data_type": "string",
-                "name": "A_ARG_TYPE_TrackList",
-                "send_events": false
-              }
-            ],
-            "AVTransportURI": [
-              {
-                "data_type": "string",
-                "name": "AVTransportURI",
-                "send_events": false
-              }
-            ],
-            "TransportState": [
-              {
-                "data_type": "string",
-                "name": "TransportState",
+                "name": "RelativeTimePosition",
                 "send_events": false
               }
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/AVTransport1.xml",
+        "scpd_url": "/xml/AVTransport1.xml",
         "type": "urn:schemas-upnp-org:service:AVTransport:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/MediaRenderer/Queue/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaRenderer/Queue/Control",
+        "events_url": "/MediaRenderer/Queue/Event",
         "scpd": {
           "actions": [
             {
@@ -6208,12 +6208,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/Queue1.xml",
+        "scpd_url": "/xml/Queue1.xml",
         "type": "urn:schemas-sonos-com:service:Queue:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/MediaRenderer/GroupRenderingControl/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaRenderer/GroupRenderingControl/Control",
+        "events_url": "/MediaRenderer/GroupRenderingControl/Event",
         "scpd": {
           "actions": [
             {
@@ -6342,12 +6342,12 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/GroupRenderingControl1.xml",
+        "scpd_url": "/xml/GroupRenderingControl1.xml",
         "type": "urn:schemas-upnp-org:service:GroupRenderingControl:1"
       },
       {
-        "control_url": "http://192.168.0.195:1400/MediaRenderer/VirtualLineIn/Control",
-        "events_url": "http://192.168.0.195:1400",
+        "control_url": "/MediaRenderer/VirtualLineIn/Control",
+        "events_url": "/MediaRenderer/VirtualLineIn/Event",
         "scpd": {
           "actions": [
             {
@@ -6518,7 +6518,7 @@
             ]
           }
         },
-        "scpd_url": "http://192.168.0.195:1400/xml/VirtualLineIn1.xml",
+        "scpd_url": "/xml/VirtualLineIn1.xml",
         "type": "urn:schemas-upnp-org:service:VirtualLineIn:1"
       }
     ],
