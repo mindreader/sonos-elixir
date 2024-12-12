@@ -7,7 +7,7 @@
 # General application configuration
 import Config
 
-#config :sonos_elixir,
+# config :sonos_elixir,
 #  ecto_repos: [Sonos.Repo],
 #  generators: [timestamp_type: :utc_datetime]
 

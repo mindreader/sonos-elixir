@@ -6,12 +6,16 @@ defmodule Sonos do
   alias Sonos.Device
 
   # TODO move these into the sonos.ex module
-  def rescan do
-    Sonos.Server |> GenServer.cast(:scan)
+  def scan do
+    Sonos.SSDP.scan()
   end
 
-  def state do
+  def server_state do
     Sonos.Server |> GenServer.call(:state)
+  end
+
+  def ssdp_state do
+    Sonos.SSDP |> GenServer.call(:state)
   end
 
   def identify_all do

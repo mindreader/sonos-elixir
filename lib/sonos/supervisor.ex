@@ -10,7 +10,7 @@ defmodule Sonos.Supervisor do
       Sonos.Server,
       Sonos.SSDP,
       {Phoenix.PubSub, name: Sonos.PubSub},
-      SonosWeb.Endpoint,
+      SonosWeb.Endpoint
     ]
     |> Supervisor.init(strategy: :one_for_one)
   end

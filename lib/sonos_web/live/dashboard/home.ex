@@ -3,8 +3,8 @@ defmodule SonosWeb.Dashboard do
 
   @impl true
   def mount(params, _session, socket) do
-#    podcast = Podcasts.get_podcast!(podcast_id)
-#    episodes = Episodes.list_episodes(podcast)
+    #    podcast = Podcasts.get_podcast!(podcast_id)
+    #    episodes = Episodes.list_episodes(podcast)
 
     podcast = %{
       title: "Podcast 1",
@@ -13,6 +13,7 @@ defmodule SonosWeb.Dashboard do
     }
 
     IO.inspect(podcast, label: "podcast")
+
     socket
     |> assign(:podcast, podcast)
     |> then(fn socket -> {:ok, socket} end)
@@ -23,18 +24,18 @@ defmodule SonosWeb.Dashboard do
     {:noreply, socket}
   end
 
-#  defp apply_action(socket, :index, _params) do
-#    socket
-#    |> assign(:page_title, "Listing Episodes")
-#  end
+  #  defp apply_action(socket, :index, _params) do
+  #    socket
+  #    |> assign(:page_title, "Listing Episodes")
+  #  end
 
-#  @impl true
-#  def handle_info({SonosWeb.EpisodeLive.EpisodeEditComponent, {:saved, episode}}, socket) do
-#    {:noreply, socket}
-#  end
-#
-#  @impl true
-#  def handle_info({SonosWeb.EpisodeLive.EpisodeEditComponent, {:deleted, episode}}, socket) do
-#    {:noreply, stream_delete(socket, :episodes, episode)}
-#  end
+  #  @impl true
+  #  def handle_info({SonosWeb.EpisodeLive.EpisodeEditComponent, {:saved, episode}}, socket) do
+  #    {:noreply, socket}
+  #  end
+  #
+  #  @impl true
+  #  def handle_info({SonosWeb.EpisodeLive.EpisodeEditComponent, {:deleted, episode}}, socket) do
+  #    {:noreply, stream_delete(socket, :episodes, episode)}
+  #  end
 end

@@ -10,5 +10,5 @@ defmodule SonosWeb.Layouts do
   """
   use SonosWeb, :html
 
-  embed_templates "layouts/*"
+  embed_templates("layouts/*")
 end

@@ -16,7 +16,7 @@ defmodule Sonos.Soap do
       %Request{
         route: route,
         action: Soap.upnp_action(service_part, action),
-        body: Soap.upnp_body(service_part, action, args),
+        body: Soap.upnp_body(service_part, action, args)
       }
     end
   end
@@ -27,9 +27,10 @@ defmodule Sonos.Soap do
     def new(response, function, outputs \\ [], _opts \\ []) do
       case response do
         {:ok, %HTTPoison.Response{body: body, status_code: 200}} ->
-          result_outputs = body
-          |> XmlToMap.naive_map()
-          |> get_in(["s:Envelope", "#content", "s:Body","u:#{function}Response"])
+          result_outputs =
+            body
+            |> XmlToMap.naive_map()
+            |> get_in(["s:Envelope", "#content", "s:Body", "u:#{function}Response"])
 
           resp = %Response{
             outputs:
@@ -37,23 +38,29 @@ defmodule Sonos.Soap do
               |> Enum.map(fn x ->
                 result_output = result_outputs |> get_in([to_string(x.original_name)])
 
-                result_output = case !is_nil(result_output) and x.data_type do
-                  :string ->
-                    result_output
-                  :boolean ->
-                    result_output |> String.to_existing_atom()
-                  x when x in [:i1, :i2, :i4, :i8, :ui1, :ui2, :ui4, :ui8] ->
-                    result_output |> String.to_integer()
-                  _ ->
-                    result_output
-                end
+                result_output =
+                  case !is_nil(result_output) and x.data_type do
+                    :string ->
+                      result_output
+
+                    :boolean ->
+                      result_output |> String.to_existing_atom()
+
+                    x when x in [:i1, :i2, :i4, :i8, :ui1, :ui2, :ui4, :ui8] ->
+                      result_output |> String.to_integer()
+
+                    _ ->
+                      result_output
+                  end
 
                 {
-                x.name,
-                result_output
-              } end)
+                  x.name,
+                  result_output
+                }
+              end)
               |> Map.new()
           }
+
           {:ok, resp}
 
         {:ok, %HTTPoison.Response{body: body, status_code: code}} ->
@@ -137,13 +144,12 @@ defmodule Sonos.Soap do
     HTTPoison.post(url, body, headers)
   end
 
-  def subscribe(%Subscription{} = sub, endpoint, _opts \\ []) do
-    # TODO get and store SID
+  def subscribe(%Subscription{} = sub, endpoint, our_event_address, _opts \\ []) do
     url = "#{endpoint}/#{sub.route |> String.trim_leading("/")}"
 
     headers = [
       {"TIMEOUT", "Second-60"},
-      {"CALLBACK", "<http://192.168.1.80:4001/events/av>"},
+      {"CALLBACK", "<#{our_event_address}/events/av>"},
       {"NT", "upnp:event"}
     ]
 

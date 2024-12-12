@@ -1,4 +1,7 @@
 defmodule Sonos.SSDP do
+  alias __MODULE__.Message
+  alias __MODULE__.Device
+
   use GenServer
   require Logger
 
@@ -13,22 +16,28 @@ defmodule Sonos.SSDP do
   end
 
   defmodule State do
-    defstruct
-      socket: nil,
-      # Map(host -> Device)
-      devices: %{}
-  end
+    defstruct socket: nil,
+              # Map(host -> Device)
+              devices: %{}
 
-  defmodule Device do
-    defstruct bootid: nil, host: nil, location: nil
+    def replace_device(state, device) do
+      devices = state.devices |> Map.put(device.usn, device)
+      state |> Map.put(:devices, devices)
+    end
+
+    def remove_device(state, usn) do
+      devices = state.devices |> Map.delete(usn)
+      state |> Map.put(:devices, devices)
+    end
   end
 
   def init(_args) do
     state = %State{
-      socket: port()
+      socket: port(),
+      devices: %{}
     }
 
-    {:ok, state}
+    {:ok, state, {:continue, :scan}}
   end
 
   def options do
@@ -65,16 +74,24 @@ defmodule Sonos.SSDP do
     # ssdp enabled devices and will have to filter them out anyways, so I might as well use the standard ssdp
     # root device query instead in case there is some future where a device doesn't advertise ZonePlayer.
     # "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n"
-    "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: upnp:rootdevice\r\n"
+    "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: upnp:rootdevice\r\n"
   end
 
   def scan(search \\ search()) do
-    Logger.info("Scanning for devices...")
-
     __MODULE__ |> GenServer.cast({:scan, search})
   end
 
+  def handle_continue(:scan, state) do
+     handle_cast({:scan, search()}, state)
+  end
+
+  def handle_call(:state, _from, state) do
+    {:reply, state, state}
+  end
+
   def handle_cast({:scan, search}, state) do
+    Logger.info("Scanning for devices...")
+
     :ok = state.socket |> :gen_udp.send(@multicast_group, @multicast_port, search)
     {:noreply, state}
   end
@@ -87,109 +104,67 @@ defmodule Sonos.SSDP do
   def handle_info({:udp, port, ip, _something, body}, state) do
     Logger.info("Received message from #{inspect(ip)} from port #{inspect(port)}")
 
-    msg = body |> response_parse()
+    with {:ok, %Message{} = msg} <- body |> Message.from_response(),
+         headers <- msg.headers |> Map.new(),
+         usn when is_binary(usn) <- headers["usn"],
+         nts <- headers["nts"] do
+      # device = Sonos.Device.from_headers(msg.headers, ip)
+      # device |> IO.inspect(label: "SSDP device")
 
-    msg |> IO.inspect(label: "SSDP message")
 
-#    msg |> SSDP.response_parse |> Device.from_headers(ip) |> case do
-#      {:ok, %Device{} = device} ->
-#        uuid = device |> Device.uuid()
-#
-#        state = %State { state |
-#          devices: state.devices |> Map.put(uuid, device)
-#        }
-#        Task.start(Sonos, :identify, [device])
-#
-#      _ -> :ok
-#     end
-#
-    {:noreply, state}
+      action = cond do
+        # an HTTP response to our scan will not have an nts, but is an advertisement that it exists.
+        is_nil(nts) -> :update
+        # a NOTIFY with NTS of ssdp:byebye means the device is going away.
+        nts == "ssdp:byebye" -> :remove
+        # a NOTIFY with any other NTS (always ssdp:alive) is an advertisement that the device is still alive.
+        nts == "ssdp:alive" -> :update
+        true ->
+          # this shouldn't happen, but who knows what non compliant devices are out there.
+          Logger.warn("Unhandled NTS on a message from #{inspect(ip)}: #{inspect(nts)}")
+          :update
+      end
+
+      state =
+        case {action, state.devices[usn]} do
+          {:remove, nil} ->
+            state
+
+          {:remove, device} ->
+            state |> State.remove_device(usn)
+
+          {:update, nil} ->
+            with {:ok, %Device{} = device} <- Device.from_headers(msg, ip) do
+              # TODO cast a new device to Server
+              state |> State.replace_device(device)
+            else
+              error ->
+                Logger.info("Error parsing message #{inspect(error)}")
+                state
+            end
+
+          {:update, %Device{bootid: old_bootid} = device} ->
+            device = device |> Device.last_seen_now()
+            # the boot id increments when the device reboots, meaning we need to update
+            # our knowledge about the device as fields may have changed.
+            if headers["bootid.upnp.org"] != old_bootid do
+              # TODO cast a device refresh to Server
+            end
+
+
+            state |> State.replace_device(device)
+        end
+
+      {:noreply, state}
+    else
+      error ->
+        Logger.info("Error parsing message #{inspect(error)}")
+        {:noreply, state}
+    end
   end
 
   def handle_info(msg, state) do
     Logger.info("Unhandled message #{inspect(msg)}")
     {:noreply, state}
-  end
-
-  # NOTES
-  # bootid.upnp.org - increments each time the device rebooted,
-  #    signifying that its information may have changed.
-
-  # first line in ssdp is always one of
-  # - NOTIFY * HTTP/1.1\r\n
-  # - M-SEARCH * HTTP/1.1\r\n
-  # - HTTP/1.1 200 OK\r\n
-
-  # uniquely identify a device by the following (bootid update means remove the old one)
-  # "usn" + "bootid.upnp.org"
-
-  # descriptions of all of these services
-  # https://sonos.svrooij.io/services/queue
-
-  # nt - notification type (such as urn:smartspeaker-audio:service:SpeakerGroup:1)
-  #    "upnp:rootdevice" - root device
-  #    " anything else" - various sub services of the device
-  # usn -> unique service name such as:
-  #   - uuid:RINCON_48A6B870E00401400::urn:smartspeaker-audio:service:SpeakerGroup:1)
-  #   - uuid:RINCON_347E5C76283501400_MR::urn:schemas-upnp-org:service:GroupRenderingControl:1
-  #   - uuid:RINCON_347E5C76283501400_MR::urn:schemas-sonos-com:service:Queue:1
-  #   - uuid:RINCON_347E5C76283501400_MR::urn:schemas-upnp-org:service:AVTransport:1
-  #   - uuid:RINCON_347E5C76283501400::urn:schemas-tencent-com:service:QPlay:1
-
-  # location - http resource for the device to find info about the device
-  # securelocation.upnp.org - https resource for the device for the above
-
-  defmodule Message do
-    defstruct type: nil, headers: %{}
-  end
-
-  def response_parse(str) do
-    str
-    |> String.split("\r\n")
-    |> Enum.reduce(nil, fn
-      "NOTIFY * HTTP/1.1", nil ->
-        %Message{type: :NOTIFY}
-
-      "HTTP/1.1 200 OK", nil ->
-        %Message{type: :OK}
-
-      "M-SEARCH * HTTP/1.1", nil ->
-        %Message{type: :"M-SEARCH"}
-
-      header, %Message{} = msg ->
-        Regex.run(~r/^([^:]+):(?: (.*))?$/, header)
-        |> case do
-          [_, header, val] ->
-            %Message{
-              msg
-              | headers: msg.headers |> Map.put(header |> String.downcase(), val |> String.trim())
-            }
-
-          [_, header] ->
-            %Message{msg | headers: msg.headers |> Map.put(header |> String.downcase(), nil)}
-
-          nil ->
-            msg
-
-          other ->
-            other |> IO.inspect(label: "SSDP response parse error")
-            msg
-        end
-    end)
-    |> case do
-      %Message{headers: headers} = msg ->
-        headers =
-          headers
-          |> Enum.sort_by(fn {k, _} ->
-            # sort all headers that are like foo.upnp.org together instead of randomly and get
-            # some sort of predictable order out of them.
-            k |> String.split(".") |> Enum.reverse() |> Enum.join(".")
-          end)
-
-        %Message{msg | headers: headers}
-
-      _ ->
-        nil
-    end
   end
 end

@@ -2,38 +2,37 @@ defmodule SonosWeb.Router do
   use SonosWeb, :router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {SonosWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, html: {SonosWeb.Layouts, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug(:accepts, ["json"])
   end
 
   scope "/", SonosWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
-    live "/", Dashboard, :home
-
+    live("/", Dashboard, :home)
   end
 
   # Other scopes may use custom stacks.
   scope "/event", SonosWeb do
-    pipe_through :api
+    pipe_through(:api)
 
-    get "/", Events, :webhook
-    post "/", Events, :webhook
-    put "/", Events, :webhook
+    get("/", Events, :webhook)
+    post("/", Events, :webhook)
+    put("/", Events, :webhook)
   end
 
   scope "/audio", SonosWeb do
-    pipe_through :api
+    pipe_through(:api)
 
-    get "/:filename", Audio, :fetch
+    get("/:filename", Audio, :fetch)
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
@@ -46,10 +45,10 @@ defmodule SonosWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through(:browser)
 
-      live_dashboard "/dashboard", metrics: SonosWeb.Telemetry
-    #  forward "/mailbox", Plug.Swoosh.MailboxPreview
+      live_dashboard("/dashboard", metrics: SonosWeb.Telemetry)
+      #  forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
 end

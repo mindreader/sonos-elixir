@@ -172,14 +172,16 @@ defmodule Sonos.Commands do
   def avtransport_control(%Sonos.Device{} = device, command, args) do
     endpoint = device |> Sonos.Device.endpoint()
 
-    Sonos.Soap.Request.new("/MediaRenderer/AVTransport", command, args)
+    "/MediaRenderer/AVTransport"
+    |> Sonos.Soap.Request.new(command, args)
     |> request(endpoint)
   end
 
   def avtransport_event(%Sonos.Device{} = device) do
     endpoint = device |> Sonos.Device.endpoint()
 
-    Sonos.Soap.Subscription.new("/MediaRenderer/AVTransport")
+    "/MediaRenderer/AVTransport"
+    |> Sonos.Soap.Subscription.new()
     |> Sonos.Soap.subscribe(endpoint)
   end
 

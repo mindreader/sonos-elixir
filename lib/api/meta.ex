@@ -37,7 +37,12 @@ defmodule Sonos.Api.Meta do
 
       :string ->
         quote do
-          :ok <- M.val_type(is_binary(unquote(var)) || is_atom(unquote(var)), unquote(varname), unquote(type))
+          :ok <-
+            M.val_type(
+              is_binary(unquote(var)) || is_atom(unquote(var)),
+              unquote(varname),
+              unquote(type)
+            )
         end
 
       :ui1 ->
@@ -176,9 +181,13 @@ defmodule Sonos.Api.Meta do
               |> Enum.map(fn x ->
                 dtypef = fn type -> state_variables[type].data_type end
 
-                # functions like "FooUUIDsService" would get changed to "foo_uui_ds_service" by Macro.underscore
                 lowercasef = fn x ->
-                  x |> String.replace("UUIDs", "uuids") |> Macro.underscore() |> String.to_atom()
+                  x
+                  # functions like "FooUUIDsService" would get changed to "foo_uui_ds_service" by Macro.underscore
+                  |> String.replace("UUIDs", "Uuids")
+                  |> String.replace("IDs", "Ids")
+                  |> Macro.underscore()
+                  |> String.to_atom()
                 end
 
                 variablef = fn x ->
@@ -296,10 +305,10 @@ defmodule Sonos.Api.Meta do
             function_entry(device_name, service_name, function, function_docs)
           end)
 
-
         quote do
           defmodule unquote(service_module) do
             alias Sonos.Api.Meta, as: M
+
             @moduledoc """
             #{unquote(service_docs["description"])}
 
@@ -324,18 +333,21 @@ defmodule Sonos.Api.Meta do
 
     endpoint = Macro.var(:endpoint, nil)
 
-    output_value = quote do
-         Sonos.Soap.Request.new(
+    output_value =
+      quote do
+        Sonos.Soap.Request.new(
           "/#{unquote(device_name)}/#{unquote(service_name)}",
           unquote(action.original_name),
           unquote(inputs)
         )
         |> Sonos.Soap.request(unquote(endpoint))
-        |> Sonos.Soap.Response.new(unquote(action.original_name), unquote(action.outputs |> Macro.escape()))
-    end
+        |> Sonos.Soap.Response.new(
+          unquote(action.original_name),
+          unquote(action.outputs |> Macro.escape())
+        )
+      end
 
-    params = [ endpoint | action.inputs |> Enum.map(fn x -> x.name |> Macro.var(nil) end) ]
-
+    params = [endpoint | action.inputs |> Enum.map(fn x -> x.name |> Macro.var(nil) end)]
 
     validation = validate(action.inputs, output_value)
 

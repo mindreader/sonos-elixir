@@ -54,4 +54,56 @@ defmodule Sonos.Api do
     """
     Meta.define_device("Beam", "data/devices/Beam.json")
   end
+
+  # unfortunately I don't have any of these devices, so I can't define them, but if you should
+  # run across one, you can define it here by pulling the device specification from the device
+  # via the Analaytis module, storing their json in the data/devices directory
+  defmodule Play3 do
+    @moduledoc """
+    API module for Sonos Play:3 speakers.
+    """
+    # Meta.define_device("Play:3", "data/devices/Play:3.json")
+  end
+
+  defmodule One do
+    @moduledoc """
+    API module for Sonos One speakers.
+    """
+    # Meta.define_device("One", "data/devices/One.json")
+  end
+
+  defmodule OneSL do
+    @moduledoc """
+    API module for Sonos One SL speakers.
+    """
+    # Meta.define_device("OneSL", "data/devices/OneSL.json")
+  end
+
+  defmodule Play5 do
+    @moduledoc """
+    API module for Sonos Play:5 speakers.
+    """
+    # Meta.define_device("Play:5", "data/devices/Play:5.json")
+  end
+
+  defmodule Roam do
+    @moduledoc """
+    API module for Sonos Roam speakers.
+    """
+    # Meta.define_device("Roam", "data/devices/Roam.json")
+  end
+
+  defmodule SymfoniskBookshelf do
+    @moduledoc """
+    API module for SYMFONISK Bookshelf speakers.
+    """
+    # Meta.define_device("SymfoniskBookshelf", "data/devices/SymfoniskBookshelf.json")
+  end
+
+  defmodule Sub do
+    @moduledoc """
+    API module for Sonos Sub subwoofer.
+    """
+    # Meta.define_device("Sub", "data/devices/Sub.json")
+  end
 end
