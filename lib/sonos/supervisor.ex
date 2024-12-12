@@ -7,9 +7,10 @@ defmodule Sonos.Supervisor do
 
   def init(_args) do
     [
-      Sonos.Server,
-      Sonos.SSDP,
+      {Task.Supervisor, name: Sonos.Tasks},
       {Phoenix.PubSub, name: Sonos.PubSub},
+      Sonos.SSDP,
+      Sonos.Server,
       SonosWeb.Endpoint
     ]
     |> Supervisor.init(strategy: :one_for_one)

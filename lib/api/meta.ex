@@ -175,6 +175,9 @@ defmodule Sonos.Api.Meta do
 
           %{
             name: service_name,
+            type: x["type"],
+            control_url: x["control_url"],
+            event_sub_url: x["events_url"],
             module: Module.concat(dev_module, service_name),
             functions:
               x["scpd"]["actions"]
@@ -242,8 +245,8 @@ defmodule Sonos.Api.Meta do
 
     devices =
       devices
-      |> Enum.map(fn %{name: dev_name, module: dev_module, services: services} ->
-        Sonos.Api.Meta.device_entry(dev_name, dev_module, services, docs)
+      |> Enum.map(fn %{module: dev_module, services: services} ->
+        Sonos.Api.Meta.device_entry(dev_module, services, docs)
       end)
 
     error_docs =
@@ -288,12 +291,12 @@ defmodule Sonos.Api.Meta do
     end)
   end
 
-  def device_entry(device_name, dev_module, services, docs) do
+  def device_entry(dev_module, services, docs) do
     # Sonos.Api.<model>.<device>.<service>.<function>
     # eg Sonos.Api.Play1.MediaServer.ConnectionManager.get_protocol_info
     functions =
       services
-      |> Enum.map(fn %{module: service_module, name: service_name} = spec ->
+      |> Enum.map(fn %{module: service_module, name: service_name, type: service_type} = spec ->
         service_docs = docs["services"]["#{service_name}Service"]
 
         error_docs = docs |> error_docs()
@@ -302,7 +305,7 @@ defmodule Sonos.Api.Meta do
           spec.functions
           |> Enum.map(fn function ->
             function_docs = service_docs["actions"][function.original_name |> to_string()]
-            function_entry(device_name, service_name, function, function_docs)
+            function_entry(spec.control_url, service_type, function, function_docs)
           end)
 
         quote do
@@ -328,15 +331,16 @@ defmodule Sonos.Api.Meta do
     end
   end
 
-  def function_entry(device_name, service_name, action, function_docs) do
+  def function_entry(control_url, service_type, action, function_docs) do
     inputs = action.inputs |> Enum.map(fn x -> {x.original_name, Macro.var(x.name, nil)} end)
 
     endpoint = Macro.var(:endpoint, nil)
 
     output_value =
       quote do
-        Sonos.Soap.Request.new(
-          "/#{unquote(device_name)}/#{unquote(service_name)}",
+        Sonos.Soap.Control.new(
+          unquote(control_url),
+          unquote(service_type),
           unquote(action.original_name),
           unquote(inputs)
         )

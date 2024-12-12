@@ -24,7 +24,7 @@ config :sonos_elixir, SonosWeb.Endpoint,
   # http: [ip: {127, 0, 0, 1}, port: 4000],
   http: [
     ip:
-      System.get_env("HOST", "127.0.0.1")
+      System.get_env("HOST", "0.0.0.0")
       |> String.split(".")
       |> Enum.map(fn x ->
         x

@@ -17,7 +17,6 @@ defmodule Sonos.SSDP.Device do
   end
 
   def from_headers(%Message{} = msg, ip) do
-    msg |> IO.inspect(label: "msg")
     type = msg.type
     headers = msg.headers |> Map.new()
 

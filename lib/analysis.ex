@@ -33,19 +33,20 @@ defmodule Analysis do
 
       {:ok, %HTTPoison.Response{} = res} ->
         root_device = res.body |> XmlToMap.naive_map() |> get_in(["root", "device"])
+        Logger.info("Device: #{root_device["friendlyName"]}")
 
         servicef = fn service ->
           %{
             type: service["serviceType"],
-            scpd_url: "#{root}#{service["SCPDURL"]}",
-            control_url: "#{root}#{service["controlURL"]}",
-            events_url: "#{root}#{service["eventSubUrl"]}"
+            scpd_url: service["SCPDURL"],
+            control_url: service["controlURL"],
+            events_url: service["eventSubURL"]
           }
         end
 
         devicef = fn device ->
           %{
-            name: device["friendlyName"],
+            name: device["modelName"],
             type: device["deviceType"],
             services: device["serviceList"]["service"] |> coerce_to_list() |> Enum.map(servicef)
           }
@@ -59,7 +60,7 @@ defmodule Analysis do
           services =
             device.services
             |> Enum.map(fn service ->
-              scpd = service.scpd_url |> query_service()
+              scpd = "#{root}#{service.scpd_url}" |> query_service()
               service |> Map.put(:scpd, scpd)
             end)
 

@@ -1,22 +1,31 @@
 defmodule Sonos.Soap do
   require Logger
 
-  defmodule Request do
-    alias Sonos.Soap
+  defmodule Control do
+    defstruct control_url: nil, service_type: nil, action: nil, args: nil
 
-    defstruct action: nil, body: nil, route: nil
+    def new(control_url, service_type, action, args \\ [], _opts \\ []) do
 
-    def new(service, action, args \\ [], _opts \\ []) do
-      Logger.info("request #{service} #{action} #{inspect(args)}")
-      route = "#{service}/Control"
+      %Control{
+        control_url: control_url,
+        service_type: service_type,
+        action: action,
+        args: args
+      }
+    end
+  end
 
-      # eg /MediaRenderer/AVTransport -> AVTransport
-      service_part = Regex.replace(~r/.*\//, service, "")
+  defmodule Subscribe do
+    defstruct events_url: nil, our_event_address: nil, timeout: nil
 
-      %Request{
-        route: route,
-        action: Soap.upnp_action(service_part, action),
-        body: Soap.upnp_body(service_part, action, args)
+    # TODO longer for prod.
+    @default_timeout :timer.seconds(60)
+
+    def new(events_url, our_event_address, timeout \\ @default_timeout) do
+      %Subscribe{
+        events_url: events_url,
+        our_event_address: our_event_address,
+        timeout: div(timeout, 1000)
       }
     end
   end
@@ -73,48 +82,20 @@ defmodule Sonos.Soap do
     end
   end
 
-  defmodule Subscription do
-    defstruct route: nil
-
-    def new(service) do
-      route = "#{service}/Event"
-
-      %Subscription{
-        route: route
-      }
-    end
+  defmodule Notification do
   end
 
-  def upnp_service(service) do
-    "urn:schemas-upnp-org:service:#{service}:1"
-  end
-
-  def upnp_action(service, action) do
-    "#{upnp_service(service)}##{action}"
-  end
-
-  def upnp_body(service, action, args) do
-    XmlBuilder.element(
-      "u:#{action}",
-      %{
-        :"xmlns:u" => upnp_service(service)
-      },
-      args
-      |> Enum.map(fn {k, v} ->
-        XmlBuilder.element(k, %{}, v)
-      end)
-    )
+  defp element(contents, name, attrs \\ %{}) do
+    # WHy did the author write this so non idiomatically?
+    XmlBuilder.element(name, attrs, contents)
   end
 
   def envelope(contents) when is_list(contents) do
-    XmlBuilder.element(
-      :"s:Envelope",
-      %{
-        :"xmlns:s" => :"http://schemas.xmlsoap.org/soap/envelope/",
-        :"s:encodingStyle" => :"http://schemas.xmlsoap.org/soap/encoding/"
-      },
-      contents
-    )
+    contents
+    |> element(:"s:Envelope", %{
+      :"xmlns:s" => :"http://schemas.xmlsoap.org/soap/envelope/",
+      :"s:encodingStyle" => :"http://schemas.xmlsoap.org/soap/encoding/"
+    })
   end
 
   def envelope(contents) do
@@ -122,30 +103,52 @@ defmodule Sonos.Soap do
   end
 
   def body_tag(contents) when is_list(contents) do
-    XmlBuilder.element(:"s:Body", %{}, contents)
+    contents |> element(:"s:Body", %{})
   end
 
   def body_tag(contents) do
     [contents] |> body_tag()
   end
 
-  def request(%Request{} = req, endpoint, _opts \\ []) do
-    url = "#{endpoint}/#{req.route |> String.trim_leading("/")}"
+  def request(req, endpoint, _opts \\ [])
 
-    body = req.body |> body_tag() |> envelope() |> XmlBuilder.generate(format: :none)
+  def request(%Control{} = req, endpoint, _opts) do
+    url = "#{endpoint}#{req.control_url}"
+    action = "#{req.service_type}##{req.action}"
+
+    body = req.args
+      |> Enum.map(fn {k, v} ->
+        v |> element(k)
+      end)
+      |> element(:"u:#{req.action}", %{
+        :"xmlns:u" => req.service_type
+      })
+      |> body_tag()
+      |> envelope()
+      |> XmlBuilder.generate(format: :none)
 
     headers =
       [
         {"CONTENT-TYPE", "text/xml; charset=\"utf-8\""},
-        {"SOAPACTION", "#{req.action}"},
+        {"SOAPACTION", "#{action}"},
         {"CONTENT_LENGTH", "#{body |> String.length()}"}
       ]
-
-    HTTPoison.post(url, body, headers)
+      HTTPoison.post(url, body, headers)
   end
 
-  def subscribe(%Subscription{} = sub, endpoint, our_event_address, _opts \\ []) do
-    url = "#{endpoint}/#{sub.route |> String.trim_leading("/")}"
+  def request(%Subscribe{} = sub, endpoint, _opts) do
+    url = "#{endpoint}#{sub.events_url}"
+    headers = [
+      {"TIMEOUT", "Second-#{sub.timeout}"},
+      {"CALLBACK", "<#{sub.our_event_address}>"},
+      {"NT", "upnp:event"}
+    ]
+
+    HTTPoison.request(:subscribe, url, "", headers)
+  end
+
+  def subscribe(endpoint, events_url, our_event_address, _opts \\ []) do
+    url = "#{endpoint}#{events_url}"
 
     headers = [
       {"TIMEOUT", "Second-60"},
@@ -166,7 +169,7 @@ defmodule Sonos.Soap do
         end
 
       err ->
-        Logger.error("Failed to subscribe #{inspect(sub)} error #{inspect(err)}")
+        Logger.error("Failed to subscribe #{inspect(url)} error #{inspect(err)}")
         {:error, err}
     end
   end

@@ -1,6 +1,5 @@
 defmodule Sonos.SSDP do
-  alias __MODULE__.Message
-  alias __MODULE__.Device
+  alias __MODULE__
 
   use GenServer
   require Logger
@@ -18,7 +17,8 @@ defmodule Sonos.SSDP do
   defmodule State do
     defstruct socket: nil,
               # Map(host -> Device)
-              devices: %{}
+              devices: %{},
+              subscribers: %{}
 
     def replace_device(state, device) do
       devices = state.devices |> Map.put(device.usn, device)
@@ -73,8 +73,12 @@ defmodule Sonos.SSDP do
     # This technically gets all sonos devices I'm aware of, but I'm going to get constant chatter from other
     # ssdp enabled devices and will have to filter them out anyways, so I might as well use the standard ssdp
     # root device query instead in case there is some future where a device doesn't advertise ZonePlayer.
-    # "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n"
-    "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: upnp:rootdevice\r\n"
+    "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n"
+    # "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: upnp:rootdevice\r\n"
+  end
+
+  def subscribe(subject) do
+    GenServer.call(__MODULE__, {:subscribe, self(), subject})
   end
 
   def scan(search \\ search()) do
@@ -89,11 +93,32 @@ defmodule Sonos.SSDP do
     {:reply, state, state}
   end
 
+  def handle_call({:subscribe, pid, subject}, _from, state) do
+    Logger.info("Subscribing pid #{inspect(pid)} to #{inspect(subject)}")
+    subscriber = SSDP.Subscriber.new(pid, subject)
+    state = update_in(state.subscribers, &Map.put(&1, pid, subscriber))
+
+    state.devices |> Enum.each(fn {usn, device} ->
+      if SSDP.Subscriber.relevant_device(subscriber, device) do
+        Logger.info("Sending update for device #{inspect(usn)} to pid #{inspect(pid)}")
+        GenServer.cast(pid, {:update_device, device})
+      end
+    end)
+
+    pid |> Process.monitor()
+    {:reply, :ok, state}
+  end
+
   def handle_cast({:scan, search}, state) do
     Logger.info("Scanning for devices...")
 
     :ok = state.socket |> :gen_udp.send(@multicast_group, @multicast_port, search)
     {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    subscribers = state.subscribers |> Map.delete(pid)
+    {:noreply, state |> Map.put(:subscribers, subscribers)}
   end
 
   def handle_info({:udp_passive, _port}, state) do
@@ -102,9 +127,9 @@ defmodule Sonos.SSDP do
   end
 
   def handle_info({:udp, port, ip, _something, body}, state) do
-    Logger.info("Received message from #{inspect(ip)} from port #{inspect(port)}")
+    Logger.debug("Received message from #{inspect(ip)} from port #{inspect(port)}")
 
-    with {:ok, %Message{} = msg} <- body |> Message.from_response(),
+    with {:ok, %SSDP.Message{} = msg} <- body |> SSDP.Message.from_response(),
          headers <- msg.headers |> Map.new(),
          usn when is_binary(usn) <- headers["usn"],
          nts <- headers["nts"] do
@@ -115,13 +140,13 @@ defmodule Sonos.SSDP do
       action = cond do
         # an HTTP response to our scan will not have an nts, but is an advertisement that it exists.
         is_nil(nts) -> :update
+        # a NOTIFY with an NTS of ssdp:alive is an advertisement that the device is still alive.
+        nts == "ssdp:alive" -> :update
         # a NOTIFY with NTS of ssdp:byebye means the device is going away.
         nts == "ssdp:byebye" -> :remove
-        # a NOTIFY with any other NTS (always ssdp:alive) is an advertisement that the device is still alive.
-        nts == "ssdp:alive" -> :update
         true ->
           # this shouldn't happen, but who knows what non compliant devices are out there.
-          Logger.warn("Unhandled NTS on a message from #{inspect(ip)}: #{inspect(nts)}")
+          Logger.warning("Unhandled NTS on a message from #{inspect(ip)}: #{inspect(nts)}")
           :update
       end
 
@@ -131,11 +156,25 @@ defmodule Sonos.SSDP do
             state
 
           {:remove, device} ->
+            state.subscribers |> Enum.each(fn {pid, subscriber} ->
+              if SSDP.Subscriber.relevant_device(subscriber, device) do
+                Logger.info("Sending 1 remove for device #{inspect(usn)} to pid #{inspect(pid)}")
+                GenServer.cast(pid, {:remove_device, usn})
+              end
+            end)
+
             state |> State.remove_device(usn)
 
           {:update, nil} ->
-            with {:ok, %Device{} = device} <- Device.from_headers(msg, ip) do
-              # TODO cast a new device to Server
+            with {:ok, %SSDP.Device{} = device} <- SSDP.Device.from_headers(msg, ip) do
+
+              state.subscribers |> Enum.each(fn {pid, subscriber} ->
+                if SSDP.Subscriber.relevant_device(subscriber, device) do
+                  Logger.info("Sending 2 update for device #{inspect(usn)} to pid #{inspect(pid)}")
+                  GenServer.cast(pid, {:update_device, device})
+                end
+              end)
+
               state |> State.replace_device(device)
             else
               error ->
@@ -143,12 +182,16 @@ defmodule Sonos.SSDP do
                 state
             end
 
-          {:update, %Device{bootid: old_bootid} = device} ->
-            device = device |> Device.last_seen_now()
+          {:update, %SSDP.Device{bootid: old_bootid} = device} ->
+            device = device |> SSDP.Device.last_seen_now()
             # the boot id increments when the device reboots, meaning we need to update
             # our knowledge about the device as fields may have changed.
             if headers["bootid.upnp.org"] != old_bootid do
-              # TODO cast a device refresh to Server
+              state.subscribers |> Enum.each(fn {pid, subscriber} ->
+                if SSDP.Subscriber.relevant_device(subscriber, device) do
+                  GenServer.cast(pid, {:update_device, device})
+                end
+              end)
             end
 
 
