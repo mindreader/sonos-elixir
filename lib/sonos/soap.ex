@@ -21,7 +21,9 @@ defmodule Sonos.Soap do
     # TODO longer for prod.
     @default_timeout :timer.seconds(60)
 
-    def new(events_url, our_event_address, timeout \\ @default_timeout) do
+    def new(events_url, our_event_address, opts \\ []) do
+      timeout = opts[:timeout] || @default_timeout
+
       %Subscribe{
         events_url: events_url,
         our_event_address: our_event_address,

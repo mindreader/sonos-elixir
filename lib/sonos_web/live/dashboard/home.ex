@@ -2,7 +2,7 @@ defmodule SonosWeb.Dashboard do
   use SonosWeb, :live_view
 
   @impl true
-  def mount(params, _session, socket) do
+  def mount(_params, _session, socket) do
     #    podcast = Podcasts.get_podcast!(podcast_id)
     #    episodes = Episodes.list_episodes(podcast)
 
@@ -20,7 +20,7 @@ defmodule SonosWeb.Dashboard do
   end
 
   @impl true
-  def handle_params(params, _url, socket) do
+  def handle_params(_params, _url, socket) do
     {:noreply, socket}
   end
 

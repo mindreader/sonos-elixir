@@ -308,6 +308,12 @@ defmodule Sonos.Api.Meta do
             function_entry(spec.control_url, service_type, function, function_docs)
           end)
 
+        event_variables =
+          spec.state_variables
+          |> Enum.filter(fn {_var, x} -> x.send_events end)
+          |> Enum.map(& elem(&1, 0))
+          |> Enum.map(& "* #{&1}\n")
+
         quote do
           defmodule unquote(service_module) do
             alias Sonos.Api.Meta, as: M
@@ -319,6 +325,37 @@ defmodule Sonos.Api.Meta do
             """
 
             unquote(functions)
+
+            @doc """
+              Subscribe to events from this service.
+
+              ## Parameters
+              * `endpoint`: The endpoint of the device to call (eg "http://192.168.1.96:1400")
+
+
+              ## Options
+              * `timeout`: The timeout for the subscription (default 60 seconds)
+
+
+              ## Variables
+              #{unquote(event_variables)}
+            """
+            def subscribe(endpoint, event_address, opts \\ []) do
+              sub = Sonos.Soap.Subscribe.new(
+                unquote(spec.event_sub_url),
+                event_address,
+                opts
+              )
+
+              sub |> Sonos.Soap.request(endpoint)
+            end
+
+            @doc """
+            The upnp service type for this service. Useful for subscribing to events.
+            """
+            def service_type do
+              unquote(service_type)
+            end
           end
         end
       end)
@@ -390,9 +427,12 @@ defmodule Sonos.Api.Meta do
             |> Enum.filter(& &1)
 
           if inputs != [] do
+            # TODO this won't display if there are no input docs, but it really should
+            # so that at least the endpoint is explained, and the types of the inputs
+            # are displayed at least, if there are any.
             quote do
               unquote("""
-              ## Inputs
+              ## Parameters
 
               * `endpoint`: The endpoint of the device to call (eg `http://192.168.1.96:1400`)
               #{inputs |> Enum.map(fn {name, description} -> "* `#{name}`: #{description}\n" end) |> Enum.join()}

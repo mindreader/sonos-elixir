@@ -3,19 +3,8 @@ require Logger
 defmodule Sonos do
   use Application
 
-  alias Sonos.Device
-
-  # TODO move these into the sonos.ex module
   def scan do
     Sonos.SSDP.scan()
-  end
-
-  def server_state do
-    Sonos.Server |> GenServer.call(:state)
-  end
-
-  def ssdp_state do
-    Sonos.SSDP |> GenServer.call(:state)
   end
 
   def devices do
@@ -24,5 +13,13 @@ defmodule Sonos do
 
   def start(_type, _args) do
     Supervisor.start_link([Sonos.Supervisor], strategy: :one_for_one)
+  end
+
+  def server_state do
+    Sonos.Server |> GenServer.call(:state)
+  end
+
+  def ssdp_state do
+    Sonos.SSDP |> GenServer.call(:state)
   end
 end

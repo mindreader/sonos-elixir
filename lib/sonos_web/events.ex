@@ -1,15 +1,25 @@
 defmodule SonosWeb.Events do
   use SonosWeb, :controller
 
-  def webhook(conn, params) do
+  def webhook(conn, %{"usn" => usn, "service" => service}) do
 
-    params |> IO.inspect(label: "params")
     {:ok, body, conn} = conn |> Plug.Conn.read_body()
-    body |> IO.inspect(label: "body")
 
-    response = %{foo: :bar}
+    vars = body
+    |> XmlToMap.naive_map()
+    |> Map.get("e:propertyset")
+    |> Map.get("e:property")
+    |> Enum.map(fn var ->
+      var |> Enum.to_list() |> hd
+    end)
+    |> Map.new()
+
+    Sonos.Server.update_device_state(usn, service, vars)
+
+    json = %{success: true} |> Jason.encode!()
 
     conn
-    |> json(response)
+    |> Plug.Conn.put_resp_content_type("application/json")
+    |> Plug.Conn.send_resp(200, json)
   end
 end

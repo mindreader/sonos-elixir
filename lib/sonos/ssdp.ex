@@ -94,13 +94,13 @@ defmodule Sonos.SSDP do
   end
 
   def handle_call({:subscribe, pid, subject}, _from, state) do
-    Logger.info("Subscribing pid #{inspect(pid)} to #{inspect(subject)}")
+    Logger.info("Subscribing #{__MODULE__} to #{inspect(subject)}")
     subscriber = SSDP.Subscriber.new(pid, subject)
     state = update_in(state.subscribers, &Map.put(&1, pid, subscriber))
 
     state.devices |> Enum.each(fn {usn, device} ->
       if SSDP.Subscriber.relevant_device(subscriber, device) do
-        Logger.info("Sending update for device #{inspect(usn)} to pid #{inspect(pid)}")
+        Logger.info("Updating device #{inspect(usn)}")
         GenServer.cast(pid, {:update_device, device})
       end
     end)
@@ -126,8 +126,8 @@ defmodule Sonos.SSDP do
     {:noreply, state}
   end
 
-  def handle_info({:udp, port, ip, _something, body}, state) do
-    Logger.debug("Received message from #{inspect(ip)} from port #{inspect(port)}")
+  def handle_info({:udp, _port, ip, _something, body}, state) do
+    # Logger.debug("Received message from #{inspect(ip)} from port #{inspect(port)}")
 
     with {:ok, %SSDP.Message{} = msg} <- body |> SSDP.Message.from_response(),
          headers <- msg.headers |> Map.new(),
@@ -158,7 +158,7 @@ defmodule Sonos.SSDP do
           {:remove, device} ->
             state.subscribers |> Enum.each(fn {pid, subscriber} ->
               if SSDP.Subscriber.relevant_device(subscriber, device) do
-                Logger.info("Sending 1 remove for device #{inspect(usn)} to pid #{inspect(pid)}")
+                Logger.info("Removing device #{inspect(usn)}")
                 GenServer.cast(pid, {:remove_device, usn})
               end
             end)
@@ -170,7 +170,7 @@ defmodule Sonos.SSDP do
 
               state.subscribers |> Enum.each(fn {pid, subscriber} ->
                 if SSDP.Subscriber.relevant_device(subscriber, device) do
-                  Logger.info("Sending 2 update for device #{inspect(usn)} to pid #{inspect(pid)}")
+                  Logger.info("Updating device #{inspect(usn)}")
                   GenServer.cast(pid, {:update_device, device})
                 end
               end)

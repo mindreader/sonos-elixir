@@ -21,7 +21,7 @@ defmodule SonosWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  scope "/event/:usn", SonosWeb do
+  scope "/event/:usn/:service", SonosWeb do
     pipe_through(:api)
 
     match(:notify, "/", Events, :webhook)

@@ -35,49 +35,13 @@ defmodule Sonos.Utils do
     end
   end
 
-  def user_agent_detection(user_agent) do
-    cond do
-      String.contains?(user_agent, "(ZPS14)") ->
-        Sonos.Api.Beam
-
-      String.contains?(user_agent, "(ZPS12)") ->
-        Sonos.Api.Play1
-
-      String.contains?(user_agent, "(ZPS9)") ->
-        Sonos.Api.Playbar
-
-      # Note: None of the stanzas below have been seen in the wild, since
-      # I don't have any of these devices, I can't test them.
-      #
-      # String.contains?(user_agent, "(ZPS13)") ->
-      #   Sonos.Api.One
-
-      # String.contains?(user_agent, "(ZPS18)") ->
-      #   Sonos.Api.One
-
-      # String.contains?(user_agent, "(ZPS21)") ->
-      #   Sonos.Api.SymfoniskBookshelf
-
-      # String.contains?(user_agent, "(ZPS27)") ->
-      #   Sonos.Api.Roam
-
-      # String.contains?(user_agent, "(ZPS3)") ->
-      #   Sonos.Api.Play3
-
-      # String.contains?(user_agent, "(ZPS33)") ->
-      #   Sonos.Api.SymfoniskBookshelf
-
-      # String.contains?(user_agent, "(ZPS38)") ->
-      #   Sonos.Api.OneSL
-
-      # String.contains?(user_agent, "(ZPS6)") ->
-      #   Sonos.Api.Play5
-
-      # String.contains?(user_agent, "(ZPSub)") ->
-      #   Sonos.Api.Sub
-
-      true ->
-        nil
+  def model_detection(model) do
+    case model do
+      "S9" -> Sonos.Api.Playbar
+      "S12" -> Sonos.Api.Play1
+      "S14" -> Sonos.Api.Beam
+      # I don't know what the other models are, because I don't have them.
+      _ -> nil
     end
   end
 
@@ -88,6 +52,7 @@ defmodule Sonos.Utils do
       str -> str
     end)
     |> String.split("=")
+    |> Enum.map(&String.trim/1)
     |> List.last()
     |> case do
       # default to 1 hour if not specified

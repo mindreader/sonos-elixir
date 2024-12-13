@@ -12,6 +12,16 @@ defmodule Sonos.SSDP.Device do
             last_seen: nil
 
 
+  def endpoint(%Device{} = device) do
+    # strictly speaking, the various endpoints of devices could be different,
+    # but in practice they are all the same device ip and port as the main
+    # device description, and that makes things a lot simpler for us.
+    device.location
+    |> URI.parse()
+    |> Map.put(:path, nil)
+    |> URI.to_string()
+  end
+
   def last_seen_now(%Device{} = msg) do
     %Device{ msg | last_seen: Timex.now() |> Timex.to_unix() }
   end
@@ -21,9 +31,9 @@ defmodule Sonos.SSDP.Device do
     headers = msg.headers |> Map.new()
 
     bootid = headers["bootid.upnp.org"]
-    location = headers["location"]
     server = headers["server"]
     usn = headers["usn"]
+    location = headers["location"]
 
     last_seen = Timex.now() |> Timex.to_unix()
 
