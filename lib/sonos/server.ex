@@ -8,6 +8,39 @@ defmodule Sonos.Server do
     defstruct devices: nil,
               usn_by_endpoint: nil,
               our_event_address: nil
+
+    def replace_device(%State{} = state, %Device{} = device) do
+      %State{
+        state |
+        devices: state.devices |> Map.put(device.usn, device),
+        usn_by_endpoint: state.usn_by_endpoint |> Map.put(device.endpoint, device.usn)
+      }
+    end
+
+   def remove_device(%State{} = state, %Sonos.SSDP.Device{} = device) do
+      endpoint = device |> Sonos.SSDP.Device.endpoint()
+      %State {
+        state |
+        usn_by_endpoint: state.usn_by_endpoint |> Map.delete(endpoint)
+      }
+    end
+
+    def remove_device(%State{} = state, %Device{} = device) do
+      %State{
+        state |
+        devices: state.devices |> Map.delete(device.usn),
+        usn_by_endpoint: state.usn_by_endpoint |> Map.delete(device.endpoint)
+      }
+    end
+
+    def device_seen(%State{} = state, usn, last_seen_at) do
+      state.devices[usn] |> then(fn
+        nil -> state
+        %Device{} = device ->
+          device = %Device{device | last_seen_at: last_seen_at}
+          State.replace_device(state, device)
+      end)
+    end
   end
 
   def start_link(_args) do
@@ -38,8 +71,20 @@ defmodule Sonos.Server do
     __MODULE__ |> GenServer.cast({:update_device_state, usn, service, vars})
   end
 
-  def cache_fetch(endpoint, service, vars) when is_list(vars) do
-    __MODULE__ |> GenServer.call({:cache_fetch, endpoint, service, vars})
+  def cache_fetch(endpoint, service, outputs) when is_list(outputs) do
+    output_original_names = outputs |> Enum.map(fn x -> x.original_name end)
+
+    __MODULE__ |> GenServer.call({:cache_fetch, endpoint, service, output_original_names})
+    |> then(fn
+      {:ok, %{outputs: result}} ->
+        result = outputs |> Enum.map(fn x ->
+          {x.name, result[to_string(x.original_name)]}
+        end)
+        |> Map.new()
+        {:ok, %{outputs: result}}
+      err ->
+        err
+    end)
   end
 
   def handle_cast({:update_device_state, usn, service, vars}, state) do
@@ -48,18 +93,24 @@ defmodule Sonos.Server do
         Logger.warning("No device found for event received for usn #{usn}")
         state
       %Device{} = device ->
-        device_state = device.state |> Map.put(service, vars)
-        device = %Device{device | state: device_state}
-        %State{state | devices: state.devices |> Map.put(usn, device)}
+        device = device |> Device.update_state(service, vars)
+        State.replace_device(state, device)
     end)
 
     {:noreply, state}
   end
 
+  def handle_cast({:device_seen, usn, last_seen_at}, state) do
+    Logger.debug("Device seen #{usn} at #{inspect(last_seen_at)}")
+    state = State.device_seen(state, usn, last_seen_at)
+    {:noreply, state}
+  end
+
   def handle_cast({:update_device, %Sonos.SSDP.Device{} = device}, state) do
-    # if the device has changed ip, we need to make sure the old one is removed, lest
-    # we have two endpoints pointing to the same device.
-    state = update_in(state.usn_by_endpoint, &Map.delete(&1, device |> Sonos.SSDP.Device.endpoint()))
+    # we need this because it is possible that a device has changed to an ip
+    # that used to be used by some other device, and we should avoid confusion
+    # if possible.
+    state = State.remove_device(state, device)
 
     device |> Device.identify_task()
 
@@ -68,14 +119,7 @@ defmodule Sonos.Server do
 
   def handle_cast({:remove_device, usn}, state) do
     device = state.devices[usn]
-
-    state = if device do
-      update_in(state.usn_by_endpoint, &Map.delete(&1, device.endpoint))
-    else
-      state
-    end
-
-    state = update_in(state.devices, &Map.delete(&1, usn))
+    state = State.remove_device(state, device)
 
     {:noreply, state}
   end
@@ -84,32 +128,42 @@ defmodule Sonos.Server do
     {:reply, state, state}
   end
 
-  def handle_call({:cache_fetch, endpoint, service, vars}, _from, state) do
-    with {:usn, usn} when is_binary(usn) <- {:usn, state.usn_by_endpoint[endpoint]},
-         %Device{} = device <- state.devices[usn],
-          {:cache, cache} when is_map(cache) <- {:cache, device.state[service]} do
+  def handle_call({:cache_fetch, endpoint, service_module, vars}, _from, state) do
+    state.usn_by_endpoint[endpoint] |> then(fn
+      nil ->
+        {:reply, {:error, :unsubscribed_device}, state}
+      usn ->
+        state.devices[usn] |> then(fn
+          nil ->
+            {:reply, {:error, :unsubscribed_device}, state}
 
-          # TODO we have fetched from the cache, we need to resubscribe to ensure we
-          # keep this state up to date, in case we keep needing data from it.
+          %Sonos.Device{} = device ->
+            service = service_module.service_type()
 
-          res = cache |> Map.take(vars)
-          {:reply, {:ok, res}, state}
-    else
-      {:usn, nil} -> {:reply, {:error, :unsubscribed_device}, state}
-      {:cache, nil} ->
-        # TODO we were unsubscribed, we should subscribe so that we will have the data
-        # next time if it is needed.
-        {:reply, {:error, :unsubscribed_event}, state}
-      err ->
-        Logger.error("""
-        Error fetching state:
-          endpoint #{endpoint}
-          service #{service}
-          vars #{inspect(vars)}
-          err #{inspect(err)}
-        """)
-        raise err
-    end
+            device.state[service] |> then(fn
+              nil ->
+                # there is nothing cached, so subscribe so next time we will have it.
+                device |> Device.subscribe_task(service_module, state.our_event_address)
+
+                {:reply, {:error, :unsubscribed_event}, state}
+
+              %Device.State{} = devstate ->
+                # user has shown interest in this data, keep it up to date.
+                if devstate |> Device.State.expiring?() do
+                  device |> Device.subscribe_task(service_module, state.our_event_address)
+                end
+                vars = vars |> Enum.map(&to_string/1)
+
+                res = devstate.state |> Map.take(vars)
+                if res |> Enum.count() < vars |> Enum.count do
+                  missing_vars = vars |> Enum.filter(fn v -> res |> Map.has_key?(v) end)
+                  {:reply, {:error, {:missing_vars, missing_vars}}, state}
+                else
+                  {:reply, {:ok, %{outputs: res}}, state}
+                end
+            end)
+        end)
+    end)
   end
 
   def handle_continue(:subscribe, state) do

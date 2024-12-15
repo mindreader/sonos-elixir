@@ -9,7 +9,7 @@ defmodule Sonos.SSDP.Device do
             location: nil,
             server: nil,
             max_age: nil,
-            last_seen: nil
+            last_seen_at: nil
 
 
   def endpoint(%Device{} = device) do
@@ -23,7 +23,7 @@ defmodule Sonos.SSDP.Device do
   end
 
   def last_seen_now(%Device{} = msg) do
-    %Device{ msg | last_seen: Timex.now() |> Timex.to_unix() }
+    %Device{ msg | last_seen_at: Timex.now() }
   end
 
   def from_headers(%Message{} = msg, ip) do
@@ -35,7 +35,7 @@ defmodule Sonos.SSDP.Device do
     usn = headers["usn"]
     location = headers["location"]
 
-    last_seen = Timex.now() |> Timex.to_unix()
+    last_seen_at = Timex.now()
 
     max_age = headers |> Sonos.Utils.max_age_parse()
 
@@ -47,7 +47,7 @@ defmodule Sonos.SSDP.Device do
         server: server,
         usn: usn,
         max_age: max_age,
-        last_seen: last_seen
+        last_seen_at: last_seen_at
       }
 
       {:ok, res}

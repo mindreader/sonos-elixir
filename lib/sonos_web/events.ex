@@ -9,10 +9,21 @@ defmodule SonosWeb.Events do
     |> XmlToMap.naive_map()
     |> Map.get("e:propertyset")
     |> Map.get("e:property")
+    |> Sonos.Utils.coerce_to_list()
     |> Enum.map(fn var ->
       var |> Enum.to_list() |> hd
     end)
     |> Map.new()
+
+#    case vars["LastChange"] do
+#      nil ->
+#
+#        res = vars |> Jason.encode!(pretty: true)
+#        File.write!("events-#{service}.json", res)
+#      bs when is_binary(bs) ->
+#        res = bs |> XmlToMap.naive_map() |> Jason.encode!(pretty: true)
+#        File.write!("events-#{service}.json", res)
+#    end
 
     Sonos.Server.update_device_state(usn, service, vars)
 

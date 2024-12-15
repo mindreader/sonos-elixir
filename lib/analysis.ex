@@ -7,16 +7,6 @@ defmodule Analysis do
 
   require Logger
 
-  # xml to json doesn't always return lists because it doesn't know if there will be more than
-  # one attribute of a type in xml tag, so we coerce things we know are meant to be lists.
-  defp coerce_to_list(x) do
-    case x do
-      nil -> []
-      x when is_list(x) -> x
-      _ -> [x]
-    end
-  end
-
   # url eg. "http://192.168.0.48:1400/xml/ajmja/L3F.xml"
   def query_device(url) when is_binary(url) do
     Logger.info("querying device #{url}")
@@ -48,11 +38,11 @@ defmodule Analysis do
           %{
             name: device["modelName"],
             type: device["deviceType"],
-            services: device["serviceList"]["service"] |> coerce_to_list() |> Enum.map(servicef)
+            services: device["serviceList"]["service"] |> Sonos.Utils.coerce_to_list() |> Enum.map(servicef)
           }
         end
 
-        sub_devices = root_device["deviceList"]["device"] |> coerce_to_list() |> Enum.map(devicef)
+        sub_devices = root_device["deviceList"]["device"] |> Sonos.Utils.coerce_to_list() |> Enum.map(devicef)
         root_device = devicef.(root_device)
 
         [root_device | sub_devices]
@@ -97,17 +87,17 @@ defmodule Analysis do
         end
 
         actionf = fn action ->
-          arguments = action["argumentList"]["argument"] |> coerce_to_list()
+          arguments = action["argumentList"]["argument"] |> Sonos.Utils.coerce_to_list()
 
           inputs =
             arguments
-            |> coerce_to_list()
+            |> Sonos.Utils.coerce_to_list()
             |> Enum.filter(fn arg -> arg["direction"] == "in" end)
             |> Enum.map(argumentf)
 
           outputs =
             arguments
-            |> coerce_to_list()
+            |> Sonos.Utils.coerce_to_list()
             |> Enum.filter(fn arg -> arg["direction"] == "out" end)
             |> Enum.map(argumentf)
 
@@ -123,11 +113,11 @@ defmodule Analysis do
         state_variables =
           scpd
           |> get_in(["serviceStateTable", "stateVariable"])
-          |> coerce_to_list()
+          |> Sonos.Utils.coerce_to_list()
           |> Enum.map(statef)
           |> Enum.group_by(& &1.name)
 
-        actionList = scpd["actionList"]["action"] |> coerce_to_list() |> Enum.map(actionf)
+        actionList = scpd["actionList"]["action"] |> Sonos.Utils.coerce_to_list() |> Enum.map(actionf)
 
         %{
           actions: actionList,

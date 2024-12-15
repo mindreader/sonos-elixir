@@ -305,7 +305,7 @@ defmodule Sonos.Api.Meta do
           spec.functions
           |> Enum.map(fn function ->
             function_docs = service_docs["actions"][function.original_name |> to_string()]
-            function_entry(spec.control_url, service_type, function, function_docs)
+            function_entry(spec.control_url, service_module, service_type, function, function_docs)
           end)
 
         event_variables =
@@ -368,24 +368,38 @@ defmodule Sonos.Api.Meta do
     end
   end
 
-  def function_entry(control_url, service_type, action, function_docs) do
+  def function_entry(control_url, service_module, service_type, action, function_docs) do
     inputs = action.inputs |> Enum.map(fn x -> {x.original_name, Macro.var(x.name, nil)} end)
-
     endpoint = Macro.var(:endpoint, nil)
 
     output_value =
       quote do
-        Sonos.Soap.Control.new(
-          unquote(control_url),
-          unquote(service_type),
-          unquote(action.original_name),
-          unquote(inputs)
-        )
-        |> Sonos.Soap.request(unquote(endpoint))
-        |> Sonos.Soap.Response.new(
-          unquote(action.original_name),
+        case Sonos.Server.cache_fetch(
+          unquote(endpoint),
+          unquote(service_module),
           unquote(action.outputs |> Macro.escape())
-        )
+        ) do
+          {:ok, _} = res ->
+            res
+          {:error, _} ->
+            res = Sonos.Soap.Control.new(
+              unquote(control_url),
+              unquote(service_type),
+              unquote(action.original_name),
+              unquote(inputs)
+              )
+            |> Sonos.Soap.request(unquote(endpoint))
+            |> Sonos.Soap.response(
+              unquote(action.original_name),
+              unquote(action.outputs |> Macro.escape())
+            )
+          end
+          |> then(fn
+            {:ok, resp} ->
+              {:ok, Sonos.Api.Response.new(resp.outputs)}
+            err ->
+              err
+          end)
       end
 
     params = [endpoint | action.inputs |> Enum.map(fn x -> x.name |> Macro.var(nil) end)]
@@ -395,52 +409,59 @@ defmodule Sonos.Api.Meta do
     description = function_docs["description"] || nil
     remarks = function_docs["remarks"] || nil
 
-    input_docs =
-      function_docs["params"]
-      |> then(fn params ->
-        if is_map(params) do
-          sample = function_docs["sample"] || nil
+    sample = function_docs["sample"] || nil
+    params_docs = function_docs["params"] || nil
 
-          inputs =
-            action.inputs
-            |> Enum.map(fn x ->
-              original_name = x.original_name |> to_string()
+    inputs =
+      action.inputs
+      |> Enum.map(fn x ->
+        original_name = x.original_name |> to_string()
 
-              description = params[original_name]
+        description = params_docs && params_docs[original_name]
 
-              description =
-                case sample && sample[original_name] do
-                  nil ->
-                    description
+        description =
+          case sample && sample[original_name] do
+            nil ->
+              description
 
-                  sample when not is_binary(sample) or sample != "" ->
-                    description <> " (eg #{sample})"
+            sample when not is_binary(sample) or sample != "" ->
+              description <> " (eg #{sample})"
 
-                  _ ->
-                    description
-                end
-
-              if description do
-                {x.name, description}
-              end
-            end)
-            |> Enum.filter(& &1)
-
-          if inputs != [] do
-            # TODO this won't display if there are no input docs, but it really should
-            # so that at least the endpoint is explained, and the types of the inputs
-            # are displayed at least, if there are any.
-            quote do
-              unquote("""
-              ## Parameters
-
-              * `endpoint`: The endpoint of the device to call (eg `http://192.168.1.96:1400`)
-              #{inputs |> Enum.map(fn {name, description} -> "* `#{name}`: #{description}\n" end) |> Enum.join()}
-              """)
-            end
+            _ ->
+              description
           end
+
+        if description do
+          {x.name, description}
         end
       end)
+      |> Enum.filter(& &1)
+
+    outputs =
+      action.outputs
+      |> Enum.map(fn x ->
+        original_name = x.original_name |> to_string()
+        description = params_docs && params_docs[original_name]
+        {x.name, description}
+      end)
+      |> Enum.filter(& &1)
+
+    input_docs = quote do
+          unquote("""
+          ## Parameters
+
+          * `endpoint`: The endpoint of the device to call (eg `http://192.168.1.96:1400`)
+          #{inputs |> Enum.map(fn {name, description} -> "* `#{name}`: #{description}\n" end) |> Enum.join()}
+          """)
+        end
+
+    output_docs = quote do
+      unquote("""
+      ## Outputs
+
+      #{outputs |> Enum.map(fn {name, description} -> "* `#{name}`: #{description}\n" end) |> Enum.join()}
+      """)
+    end
 
     # TODO we can do typespecs
     quote do
@@ -448,6 +469,8 @@ defmodule Sonos.Api.Meta do
       #{unquote(description)}
 
       #{unquote(input_docs)}
+
+      #{unquote(output_docs)}
 
       #{unquote(remarks)}
       """

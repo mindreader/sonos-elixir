@@ -32,10 +32,7 @@ defmodule Sonos.Soap do
     end
   end
 
-  defmodule Response do
-    defstruct outputs: nil
-
-    def new(response, function, outputs \\ [], _opts \\ []) do
+    def response(response, function, outputs \\ [], _opts \\ []) do
       case response do
         {:ok, %HTTPoison.Response{body: body, status_code: 200}} ->
           result_outputs =
@@ -43,7 +40,7 @@ defmodule Sonos.Soap do
             |> XmlToMap.naive_map()
             |> get_in(["s:Envelope", "#content", "s:Body", "u:#{function}Response"])
 
-          resp = %Response{
+          resp = %{
             outputs:
               outputs
               |> Enum.map(fn x ->
@@ -80,7 +77,6 @@ defmodule Sonos.Soap do
 
         err ->
           err
-      end
     end
   end
 

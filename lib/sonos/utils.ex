@@ -71,4 +71,43 @@ defmodule Sonos.Utils do
         end)
     end
   end
+
+  # xml to json doesn't always return lists because it doesn't know if there will be more than
+  # one attribute of a type in xml tag, so we coerce things we know are meant to be lists.
+  def coerce_to_list(x) do
+    case x do
+      nil -> []
+      x when is_list(x) -> x
+      _ -> [x]
+    end
+  end
+
+  @doc """
+  Parses the ZoneGroupState variable from the Zone Group State events. Sonos devices just send
+  opaque xml because it can't be represented easily, so we must make it useful.
+  """
+  def zone_group_state_parse(val) do
+    val |> XmlToMap.naive_map()
+    |> then(fn json ->
+      json["ZoneGroupState"]["ZoneGroups"]["ZoneGroup"]
+      |> then(fn state ->
+        # not sure what the use of this is.
+        # vanished_devices = state["VanishedDevices"] || []
+        state |> coerce_to_list() |> Enum.map(fn zone ->
+          %{
+            zone_group_id: zone["-ID"],
+            zone_group_coordinator: zone["-Coordinator"],
+            members: zone["#content"]["ZoneGroupMember"] |> coerce_to_list() |> Enum.map(fn member ->
+              # there are a multitude of attributes in the member, but little of it is relevant
+              # to us.
+              %{
+                uuid: member["-UUID"],
+                zone_name: member["-ZoneName"]
+              }
+            end)
+          }
+        end)
+      end)
+    end)
+  end
 end

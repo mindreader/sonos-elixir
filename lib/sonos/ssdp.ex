@@ -15,19 +15,29 @@ defmodule Sonos.SSDP do
   end
 
   defmodule State do
+    alias __MODULE__
+
     defstruct socket: nil,
               # Map(host -> Device)
               devices: %{},
               subscribers: %{}
 
-    def replace_device(state, device) do
+    def replace_device(%State{} = state, device) do
       devices = state.devices |> Map.put(device.usn, device)
       state |> Map.put(:devices, devices)
     end
 
-    def remove_device(state, usn) do
+    def remove_device(%State{} = state, usn) do
       devices = state.devices |> Map.delete(usn)
       state |> Map.put(:devices, devices)
+    end
+
+    def remove_old_devices(%State{} = state) do
+      devices = state.devices |> Map.filter(fn {_usn, device} ->
+        # TODO revisit this logic, advertisements have a cache-control header we can key off of.
+        Timex.now() |> Timex.after?(device.last_seen_at |> Timex.shift(seconds: device.max_age))
+      end)
+      %State{state | devices: devices}
     end
   end
 
@@ -130,9 +140,9 @@ defmodule Sonos.SSDP do
     # Logger.debug("Received message from #{inspect(ip)} from port #{inspect(port)}")
 
     with {:ok, %SSDP.Message{} = msg} <- body |> SSDP.Message.from_response(),
-         headers <- msg.headers |> Map.new(),
-         usn when is_binary(usn) <- headers["usn"],
-         nts <- headers["nts"] do
+         {:headers, headers} <- {:headers, msg.headers |> Map.new()},
+         {:usn, usn} when is_binary(usn) <- {:usn, headers["usn"]},
+         {:nts, nts} <- {:nts, headers["nts"]} do
       # device = Sonos.Device.from_headers(msg.headers, ip)
       # device |> IO.inspect(label: "SSDP device")
 
@@ -192,6 +202,12 @@ defmodule Sonos.SSDP do
                   GenServer.cast(pid, {:update_device, device})
                 end
               end)
+            else
+              state.subscribers |> Enum.each(fn {pid, subscriber} ->
+                if SSDP.Subscriber.relevant_device(subscriber, device) do
+                  GenServer.cast(pid, {:device_seen, usn, device.last_seen_at})
+                end
+              end)
             end
 
 
@@ -200,6 +216,11 @@ defmodule Sonos.SSDP do
 
       {:noreply, state}
     else
+      {:usn, _usn} ->
+        # There are many messages that aren't relevant to us, such as M-SEARCH requests from
+        # other ssdp devices. If there is no usn, it probably isn't an advertisement of a device.
+        # body |> IO.inspect(label: "body")
+        {:noreply, state}
       error ->
         Logger.info("Error parsing message #{inspect(error)}")
         {:noreply, state}
