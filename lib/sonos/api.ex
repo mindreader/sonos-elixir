@@ -1,23 +1,6 @@
 defmodule Sonos.Api do
   require Sonos.Api.Meta, as: Meta
 
-  defmodule Response do
-    alias __MODULE__
-    defstruct outputs: nil
-
-    def new(vars) do
-      outputs = vars |> Enum.map(fn
-        {:zone_group_state, val} ->
-          val = val |> Sonos.Utils.zone_group_state_parse()
-          {:zone_group_state, val}
-        {var, val} -> {var, val}
-      end)
-      |> Map.new()
-
-      %Response{outputs: outputs}
-    end
-  end
-
   @moduledoc """
   Provides device-specific API modules for different Sonos speaker models.
 

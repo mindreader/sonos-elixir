@@ -377,10 +377,11 @@ defmodule Sonos.Api.Meta do
         case Sonos.Server.cache_fetch(
           unquote(endpoint),
           unquote(service_module),
+          unquote(inputs),
           unquote(action.outputs |> Macro.escape())
         ) do
           {:ok, _} = res ->
-            res
+            {:cache, res}
           {:error, _} ->
             res = Sonos.Soap.Control.new(
               unquote(control_url),
@@ -393,11 +394,14 @@ defmodule Sonos.Api.Meta do
               unquote(action.original_name),
               unquote(action.outputs |> Macro.escape())
             )
+            |> then(fn x ->
+              {:soap, x}
+            end)
           end
           |> then(fn
-            {:ok, resp} ->
-              {:ok, Sonos.Api.Response.new(resp.outputs)}
-            err ->
+            {via, {:ok, resp}} ->
+              {:ok, Sonos.Api.Response.new(unquote(action.name), resp.outputs, via: via)}
+            {_via, err} ->
               err
           end)
       end

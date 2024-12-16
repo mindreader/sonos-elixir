@@ -82,32 +82,33 @@ defmodule Sonos.Utils do
     end
   end
 
+  @data_types [:boolean, :string, :ui1, :ui2, :ui4, :i1, :i2, :i4]
+
   @doc """
-  Parses the ZoneGroupState variable from the Zone Group State events. Sonos devices just send
-  opaque xml because it can't be represented easily, so we must make it useful.
+  A lot of the datatypes returned by the devices are strings variants of the types we expect.
   """
-  def zone_group_state_parse(val) do
-    val |> XmlToMap.naive_map()
-    |> then(fn json ->
-      json["ZoneGroupState"]["ZoneGroups"]["ZoneGroup"]
-      |> then(fn state ->
-        # not sure what the use of this is.
-        # vanished_devices = state["VanishedDevices"] || []
-        state |> coerce_to_list() |> Enum.map(fn zone ->
-          %{
-            zone_group_id: zone["-ID"],
-            zone_group_coordinator: zone["-Coordinator"],
-            members: zone["#content"]["ZoneGroupMember"] |> coerce_to_list() |> Enum.map(fn member ->
-              # there are a multitude of attributes in the member, but little of it is relevant
-              # to us.
-              %{
-                uuid: member["-UUID"],
-                zone_name: member["-ZoneName"]
-              }
-            end)
-          }
-        end)
-      end)
-    end)
+  def coerce_data_type(dt, type) when type in @data_types do
+    cond do
+      is_nil(dt) -> nil
+
+      is_binary(dt) ->
+        case type do
+          :string -> dt
+          :boolean -> dt == "1"
+          _ -> dt && dt |> Integer.parse() |> elem(0)
+        end
+
+      is_integer(dt) ->
+        case type do
+          :boolean -> dt > 0
+          :string -> dt |> to_string
+          _ -> dt
+        end
+
+      is_boolean(dt) ->
+        case type do
+          :boolean -> dt
+        end
+    end
   end
 end

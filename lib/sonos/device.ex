@@ -21,6 +21,66 @@ defmodule Sonos.Device do
     def expiring?(%State{} = state) do
       state.expires_at |> Timex.before?(Timex.now())
     end
+
+  def var_replacements(%State{} = state, service_module, inputs, missing_vars) do
+    case service_module.service_type() do
+      "urn:schemas-upnp-org:service:RenderingControl:1" ->
+        alternative_vars = %{
+          "CurrentVolume" => fn state ->
+            state[inputs[:InstanceID]]["Volume"]["#{inputs[:Channel]}"]
+          end,
+          "CurrentMute" => fn state ->
+            state[inputs[:InstanceID]]["Mute"]["#{inputs[:Channel]}"]
+          end,
+          "CurrentLoudness" => fn state ->
+            inputs |> IO.inspect()
+            state[inputs[:InstanceID]]["Loudness"]["#{inputs[:Channel]}"]
+          end,
+          "CurrentValue" => fn state ->
+            state[inputs[:InstanceID]]["#{inputs[:EQType]}"]
+          end
+        }
+        res = missing_vars |> Enum.reduce(%{}, fn var, accum ->
+          case alternative_vars[var] do
+            nil -> accum
+            f -> accum |> Map.put(var, f.(state.state))
+          end
+        end)
+
+        if res |> Enum.count == missing_vars |> Enum.count do
+          {:ok, res}
+        else
+          still_missing_vars = missing_vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
+          {:error, {:still_missing_vars, still_missing_vars}}
+        end
+
+      "urn:schemas-upnp-org:service:GroupRenderingControl:1" ->
+        alternative_vars = %{
+          "CurrentVolume" => "GroupVolume",
+          "CurrentMute" => "GroupMute"
+        }
+
+        res = missing_vars |> Enum.reduce(%{}, fn var, accum ->
+          case alternative_vars[var] do
+            nil ->
+              accum
+            alternate ->
+              accum |> Map.put(var, state.state[alternate])
+          end
+        end)
+
+        if res |> Enum.count == missing_vars |> Enum.count do
+          {:ok, res}
+        else
+          still_missing_vars = missing_vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
+          {:error, {:still_missing_vars, still_missing_vars}}
+        end
+
+      _ -> {:error, {:still_missing_vars, missing_vars}}
+    end
+  end
+
+
   end
 
   defstruct usn: nil,
@@ -45,9 +105,23 @@ defmodule Sonos.Device do
   end
 
   def subscribe_task(%Sonos.Device{} = device, service, event_address) do
-    IO.puts("subscribing to #{service.service_type()} on #{device.usn}")
+    Logger.info("subscribing to #{service.service_type()} on #{device.usn}")
     event_endpoint = "#{event_address}/#{device.usn}/#{service.service_type()}"
     service |> apply(:subscribe, [device.endpoint, event_endpoint])
+    |> then(fn
+      {:ok, %HTTPoison.Response{headers: headers, status_code: 200}} ->
+        # this is the "subscription id", and it can be used to renew a subscription that
+        # has not yet expired.
+        sid = headers |> List.keyfind("SID", 0) |> elem(1) |> IO.inspect(label: "sid")
+
+        if sid do
+          {:ok, sid}
+        else
+          {:error, :no_sid}
+        end
+      err ->
+        err
+    end)
   end
 
   def identify_task(%Sonos.SSDP.Device{} = dev, opts \\ []) do

@@ -24,6 +24,12 @@ defmodule Sonos.Soap do
     def new(events_url, our_event_address, opts \\ []) do
       timeout = opts[:timeout] || @default_timeout
 
+      # The event address is too long if we have all this upnp stuff in it,
+      # causing many services to be truncated when we get back notify requests.
+      our_event_address = our_event_address
+      |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+      |> String.replace("urn:schemas-upnp-org:service:", "")
+
       %Subscribe{
         events_url: events_url,
         our_event_address: our_event_address,
@@ -44,22 +50,8 @@ defmodule Sonos.Soap do
             outputs:
               outputs
               |> Enum.map(fn x ->
-                result_output = result_outputs |> get_in([to_string(x.original_name)])
-
-                result_output =
-                  case !is_nil(result_output) and x.data_type do
-                    :string ->
-                      result_output
-
-                    :boolean ->
-                      result_output |> String.to_existing_atom()
-
-                    x when x in [:i1, :i2, :i4, :i8, :ui1, :ui2, :ui4, :ui8] ->
-                      result_output |> String.to_integer()
-
-                    _ ->
-                      result_output
-                  end
+                result_output= result_outputs |> get_in([to_string(x.original_name)])
+                result_output = Sonos.Utils.coerce_data_type(result_output, x.data_type)
 
                 {
                   x.name,
@@ -143,32 +135,5 @@ defmodule Sonos.Soap do
     ]
 
     HTTPoison.request(:subscribe, url, "", headers)
-  end
-
-  def subscribe(endpoint, events_url, our_event_address, _opts \\ []) do
-    url = "#{endpoint}#{events_url}"
-
-    headers = [
-      {"TIMEOUT", "Second-60"},
-      {"CALLBACK", "<#{our_event_address}/events/av>"},
-      {"NT", "upnp:event"}
-    ]
-
-    HTTPoison.request(:subscribe, url, "", headers)
-    |> case do
-      {:ok, %HTTPoison.Response{status_code: 200, body: ""} = resp} ->
-        resp.headers
-        |> Enum.find(fn {h, _v} ->
-          h |> String.upcase() == "SID"
-        end)
-        |> case do
-          nil -> {:ok, :unknown_sid}
-          {_h, sid} -> {:ok, sid |> String.trim()}
-        end
-
-      err ->
-        Logger.error("Failed to subscribe #{inspect(url)} error #{inspect(err)}")
-        {:error, err}
-    end
   end
 end

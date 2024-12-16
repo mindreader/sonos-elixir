@@ -9,9 +9,8 @@ defmodule Sonos.SSDP do
   @multicast_group {239, 255, 255, 250}
   @multicast_port 1900
 
-  def start_link(opts) do
-    name = opts |> Keyword.get(:name, __MODULE__)
-    GenServer.start_link(__MODULE__, [], name: name)
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   defmodule State do
@@ -33,10 +32,19 @@ defmodule Sonos.SSDP do
     end
 
     def remove_old_devices(%State{} = state) do
+      old_devices = state.devices |> Map.keys() |> MapSet.new()
+
       devices = state.devices |> Map.filter(fn {_usn, device} ->
         # TODO revisit this logic, advertisements have a cache-control header we can key off of.
         Timex.now() |> Timex.after?(device.last_seen_at |> Timex.shift(seconds: device.max_age))
       end)
+      new_devices = state.devices |> Map.keys() |> MapSet.new()
+      removed_devices = old_devices |> MapSet.difference(new_devices)
+
+      if removed_devices |> MapSet.size() > 0 do
+        Logger.info("Removing old devices #{removed_devices |> Enum.join(", ")}")
+      end
+
       %State{state | devices: devices}
     end
   end
@@ -47,7 +55,7 @@ defmodule Sonos.SSDP do
       devices: %{}
     }
 
-    {:ok, state, {:continue, :scan}}
+    {:ok, state, {:continue, :startup}}
   end
 
   def options do
@@ -88,15 +96,16 @@ defmodule Sonos.SSDP do
   end
 
   def subscribe(subject) do
-    GenServer.call(__MODULE__, {:subscribe, self(), subject})
+    {:ok, _} = GenServer.call(__MODULE__, {:subscribe, self(), subject})
   end
 
   def scan(search \\ search()) do
     __MODULE__ |> GenServer.cast({:scan, search})
   end
 
-  def handle_continue(:scan, state) do
-     handle_cast({:scan, search()}, state)
+  def handle_continue(:startup, state) do
+    handle_cast({:scan, search()}, state)
+    handle_cast(:remove_old_devices, state)
   end
 
   def handle_call(:state, _from, state) do
@@ -116,13 +125,21 @@ defmodule Sonos.SSDP do
     end)
 
     pid |> Process.monitor()
-    {:reply, :ok, state}
+    {:reply, {:ok, self()}, state}
   end
 
   def handle_cast({:scan, search}, state) do
     Logger.info("Scanning for devices...")
 
     :ok = state.socket |> :gen_udp.send(@multicast_group, @multicast_port, search)
+    {:noreply, state}
+  end
+
+  def handle_info(:remove_old_devices, state) do
+    state = State.remove_old_devices(state)
+
+    Process.send_after(self(), :remove_old_devices, :timer.seconds(10))
+
     {:noreply, state}
   end
 
@@ -200,12 +217,6 @@ defmodule Sonos.SSDP do
               state.subscribers |> Enum.each(fn {pid, subscriber} ->
                 if SSDP.Subscriber.relevant_device(subscriber, device) do
                   GenServer.cast(pid, {:update_device, device})
-                end
-              end)
-            else
-              state.subscribers |> Enum.each(fn {pid, subscriber} ->
-                if SSDP.Subscriber.relevant_device(subscriber, device) do
-                  GenServer.cast(pid, {:device_seen, usn, device.last_seen_at})
                 end
               end)
             end

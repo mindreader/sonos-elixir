@@ -15,14 +15,12 @@ defmodule SonosWeb.Events do
     end)
     |> Map.new()
 
-#    case vars["LastChange"] do
-#      nil ->
-#
-#        res = vars |> Jason.encode!(pretty: true)
-#        File.write!("events-#{service}.json", res)
+#    vars = case vars["LastChange"] do
+#      nil -> vars
 #      bs when is_binary(bs) ->
-#        res = bs |> XmlToMap.naive_map() |> Jason.encode!(pretty: true)
-#        File.write!("events-#{service}.json", res)
+#        res = bs |> XmlToMap.naive_map()
+#        # res |> IO.inspect(label: "last change")
+#        vars
 #    end
 
     Sonos.Server.update_device_state(usn, service, vars)
