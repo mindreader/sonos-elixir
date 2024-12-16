@@ -23,29 +23,34 @@ defmodule Sonos.SSDP do
 
     def replace_device(%State{} = state, device) do
       devices = state.devices |> Map.put(device.usn, device)
-      state |> Map.put(:devices, devices)
+      %State{state | devices: devices}
     end
 
     def remove_device(%State{} = state, usn) do
       devices = state.devices |> Map.delete(usn)
-      state |> Map.put(:devices, devices)
+      %State{state | devices: devices}
     end
 
     def remove_old_devices(%State{} = state) do
-      old_devices = state.devices |> Map.keys() |> MapSet.new()
-
-      devices = state.devices |> Map.filter(fn {_usn, device} ->
-        # TODO revisit this logic, advertisements have a cache-control header we can key off of.
+      {removeable_devices, keepable_devices} = state.devices |> Map.split_with(fn {_usn, device} ->
+       # Logger.info("Checking device #{usn} last seen at #{inspect(device.last_seen_at)}")
         Timex.now() |> Timex.after?(device.last_seen_at |> Timex.shift(seconds: device.max_age))
       end)
-      new_devices = state.devices |> Map.keys() |> MapSet.new()
-      removed_devices = old_devices |> MapSet.difference(new_devices)
 
-      if removed_devices |> MapSet.size() > 0 do
-        Logger.info("Removing old devices #{removed_devices |> Enum.join(", ")}")
+      if removeable_devices |> Enum.any?() do
+        Logger.info("Removing due to inactivity #{removeable_devices |> Map.keys() |> Enum.join(", ")}")
       end
+      # Logger.info("Keeping #{keepable_devices |> Map.keys() |> Enum.join(", ")}")
 
-      %State{state | devices: devices}
+      removeable_devices |> Enum.each(fn {usn, device} ->
+        state.subscribers |> Enum.each(fn {pid, subscriber} ->
+          if SSDP.Subscriber.relevant_device(subscriber, device) do
+            GenServer.cast(pid, {:remove_device, usn})
+          end
+        end)
+      end)
+
+      %State{state | devices: keepable_devices}
     end
   end
 
@@ -117,9 +122,8 @@ defmodule Sonos.SSDP do
     subscriber = SSDP.Subscriber.new(pid, subject)
     state = update_in(state.subscribers, &Map.put(&1, pid, subscriber))
 
-    state.devices |> Enum.each(fn {usn, device} ->
+    state.devices |> Enum.each(fn {_usn, device} ->
       if SSDP.Subscriber.relevant_device(subscriber, device) do
-        Logger.info("Updating device #{inspect(usn)}")
         GenServer.cast(pid, {:update_device, device})
       end
     end)
@@ -138,7 +142,7 @@ defmodule Sonos.SSDP do
   def handle_info(:remove_old_devices, state) do
     state = State.remove_old_devices(state)
 
-    Process.send_after(self(), :remove_old_devices, :timer.seconds(10))
+    Process.send_after(self(), :remove_old_devices, :timer.seconds(60))
 
     {:noreply, state}
   end
@@ -160,9 +164,6 @@ defmodule Sonos.SSDP do
          {:headers, headers} <- {:headers, msg.headers |> Map.new()},
          {:usn, usn} when is_binary(usn) <- {:usn, headers["usn"]},
          {:nts, nts} <- {:nts, headers["nts"]} do
-      # device = Sonos.Device.from_headers(msg.headers, ip)
-      # device |> IO.inspect(label: "SSDP device")
-
 
       action = cond do
         # an HTTP response to our scan will not have an nts, but is an advertisement that it exists.
@@ -183,9 +184,10 @@ defmodule Sonos.SSDP do
             state
 
           {:remove, device} ->
+            Logger.info("Removing device #{inspect(usn)} from network (#{device.server})")
+
             state.subscribers |> Enum.each(fn {pid, subscriber} ->
               if SSDP.Subscriber.relevant_device(subscriber, device) do
-                Logger.info("Removing device #{inspect(usn)}")
                 GenServer.cast(pid, {:remove_device, usn})
               end
             end)
@@ -194,10 +196,10 @@ defmodule Sonos.SSDP do
 
           {:update, nil} ->
             with {:ok, %SSDP.Device{} = device} <- SSDP.Device.from_headers(msg, ip) do
+              Logger.info("Noticed new device #{inspect(usn)} on network (#{device.server})")
 
               state.subscribers |> Enum.each(fn {pid, subscriber} ->
                 if SSDP.Subscriber.relevant_device(subscriber, device) do
-                  Logger.info("Updating device #{inspect(usn)}")
                   GenServer.cast(pid, {:update_device, device})
                 end
               end)
@@ -214,6 +216,7 @@ defmodule Sonos.SSDP do
             # the boot id increments when the device reboots, meaning we need to update
             # our knowledge about the device as fields may have changed.
             if headers["bootid.upnp.org"] != old_bootid do
+              Logger.info("Replacing device #{inspect(usn)} due to bootid increment")
               state.subscribers |> Enum.each(fn {pid, subscriber} ->
                 if SSDP.Subscriber.relevant_device(subscriber, device) do
                   GenServer.cast(pid, {:update_device, device})
