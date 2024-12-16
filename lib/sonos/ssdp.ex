@@ -31,26 +31,11 @@ defmodule Sonos.SSDP do
       %State{state | devices: devices}
     end
 
-    def remove_old_devices(%State{} = state) do
-      {removeable_devices, keepable_devices} = state.devices |> Map.split_with(fn {_usn, device} ->
-       # Logger.info("Checking device #{usn} last seen at #{inspect(device.last_seen_at)}")
+    def stale_devices(%State{} = state) do
+      state.devices |> Map.filter(fn {_usn, device} ->
+        # Logger.info("Checking device #{usn} last seen at #{inspect(device.last_seen_at)}")
         Timex.now() |> Timex.after?(device.last_seen_at |> Timex.shift(seconds: device.max_age))
       end)
-
-      if removeable_devices |> Enum.any?() do
-        Logger.info("Removing due to inactivity #{removeable_devices |> Map.keys() |> Enum.join(", ")}")
-      end
-      # Logger.info("Keeping #{keepable_devices |> Map.keys() |> Enum.join(", ")}")
-
-      removeable_devices |> Enum.each(fn {usn, device} ->
-        state.subscribers |> Enum.each(fn {pid, subscriber} ->
-          if SSDP.Subscriber.relevant_device(subscriber, device) do
-            GenServer.cast(pid, {:remove_device, usn})
-          end
-        end)
-      end)
-
-      %State{state | devices: keepable_devices}
     end
   end
 
@@ -140,7 +125,20 @@ defmodule Sonos.SSDP do
   end
 
   def handle_info(:remove_old_devices, state) do
-    state = State.remove_old_devices(state)
+    stale_devices = State.stale_devices(state)
+
+    if stale_devices |> Enum.any?() do
+      Logger.info("Removing stale devices #{stale_devices |> Map.keys() |> Enum.join(", ")}")
+    end
+
+    state = stale_devices |> Enum.reduce(state, fn {usn, device}, state ->
+      state.subscribers |> Enum.each(fn {pid, subscriber} ->
+        if SSDP.Subscriber.relevant_device(subscriber, device) do
+          GenServer.cast(pid, {:remove_device, usn})
+        end
+      end)
+      State.remove_device(state, usn)
+    end)
 
     Process.send_after(self(), :remove_old_devices, :timer.seconds(60))
 
