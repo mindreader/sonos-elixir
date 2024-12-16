@@ -230,7 +230,7 @@ defmodule Sonos.Server do
     # ZonePlayer is the root device type for all sonos devices, so far as I am aware.
     # Each one has two sub devices: MediaRenderer and MediaServer.
     {:ok, ssdp_server} = "urn:schemas-upnp-org:device:ZonePlayer:1" |> Sonos.SSDP.subscribe()
-    ref = Process.monitor(ssdp_server) |> IO.inspect(label: "ssdp_server monitor")
+    ref = Process.monitor(ssdp_server)
     state = state |> Map.put(:ssdp_server, ref)
 
     {:noreply, state}
