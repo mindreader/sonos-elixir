@@ -2,26 +2,20 @@ defmodule SonosWeb.Events do
   use SonosWeb, :controller
 
   def webhook(conn, %{"usn" => usn, "service" => service}) do
-
     {:ok, body, conn} = conn |> Plug.Conn.read_body()
 
-    vars = body
-    |> XmlToMap.naive_map()
-    |> Map.get("e:propertyset")
-    |> Map.get("e:property")
-    |> Sonos.Utils.coerce_to_list()
-    |> Enum.map(fn var ->
-      var |> Enum.to_list() |> hd
-    end)
-    |> Map.new()
+    vars =
+      body
+      |> XmlToMap.naive_map()
+      |> Map.get("e:propertyset")
+      |> Map.get("e:property")
+      |> Sonos.Utils.coerce_to_list()
+      |> Enum.map(fn var ->
+        var |> Enum.to_list() |> hd
+      end)
+      |> Map.new()
 
-#    vars = case vars["LastChange"] do
-#      nil -> vars
-#      bs when is_binary(bs) ->
-#        res = bs |> XmlToMap.naive_map()
-#        # res |> IO.inspect(label: "last change")
-#        vars
-#    end
+    conn.resp_headers |> IO.inspect(label: "headers")
 
     Sonos.Server.update_device_state(usn, service, vars)
 

@@ -1,5 +1,4 @@
 defmodule Sonos.SSDP.Device do
-
   alias __MODULE__
   alias Sonos.SSDP.Message
 
@@ -10,7 +9,6 @@ defmodule Sonos.SSDP.Device do
             server: nil,
             max_age: nil,
             last_seen_at: nil
-
 
   def endpoint(%Device{} = device) do
     # strictly speaking, the various endpoints of devices could be different,
@@ -23,7 +21,7 @@ defmodule Sonos.SSDP.Device do
   end
 
   def last_seen_now(%Device{} = msg) do
-    %Device{ msg | last_seen_at: Timex.now() }
+    %Device{msg | last_seen_at: Timex.now()}
   end
 
   def from_headers(%Message{} = msg, ip) do

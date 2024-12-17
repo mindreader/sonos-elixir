@@ -5,7 +5,6 @@ defmodule Sonos.SSDP.Subscriber do
   defstruct pid: nil,
             subject: nil
 
-
   def new(pid, subject) do
     %Subscriber{pid: pid, subject: subject}
   end

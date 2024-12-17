@@ -6,6 +6,8 @@ defmodule Sonos.Server do
 
   require Logger
 
+  @default_subscribe_timeout 60 * 5
+
   def start_link(_args) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
@@ -30,31 +32,40 @@ defmodule Sonos.Server do
     end
   end
 
-  def update_device_state(usn, service, vars) do
-    vars = case service do
-      # This one is special because it returns a big xml blob that has to be parsed specially.
-      "RenderingControl:1" ->
-        vars["LastChange"] |> XmlToMap.naive_map()
-        |> Map.get("Event") |> Sonos.Utils.coerce_to_list()
-        |> Enum.map(fn %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
-          # Map (instance_id -> state)
-          data = %{
-
-              "Loudness" => data["Loudness"] |> Sonos.Utils.coerce_to_list()
-              |> Enum.map(fn val ->
-                { val["-channel"], val["-val"] |> String.to_integer() }
-              end) |> Map.new(),
-
-              "Volume" => data["Volume"] |> Sonos.Utils.coerce_to_list()
-              |> Enum.map(fn val ->
-                { val["-channel"], val["-val"] |> String.to_integer() }
-              end) |> Map.new(),
-
-              "Mute" => data["Mute"] |> Sonos.Utils.coerce_to_list()
-              |> Enum.map(fn val ->
-                { val["-channel"], val["-val"] == "1" }
-              end) |> Map.new(),
-
+  def update_device_state(usn, service, vars) when is_binary(service) do
+    vars =
+      case service do
+        # This one is special because it returns a big xml blob that has to be parsed specially.
+        "RenderingControl:1" ->
+          vars["LastChange"]
+          |> XmlToMap.naive_map()
+          |> Map.get("Event")
+          |> Sonos.Utils.coerce_to_list()
+          |> Enum.map(fn %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
+            data |> IO.inspect(label: "data")
+            # Map (instance_id -> state)
+            data = %{
+              "Loudness" =>
+                data["Loudness"]
+                |> Sonos.Utils.coerce_to_list()
+                |> Enum.map(fn val ->
+                  {val["-channel"], val["-val"] |> String.to_integer()}
+                end)
+                |> Map.new(),
+              "Volume" =>
+                data["Volume"]
+                |> Sonos.Utils.coerce_to_list()
+                |> Enum.map(fn val ->
+                  {val["-channel"], val["-val"] |> String.to_integer()}
+                end)
+                |> Map.new(),
+              "Mute" =>
+                data["Mute"]
+                |> Sonos.Utils.coerce_to_list()
+                |> Enum.map(fn val ->
+                  {val["-channel"], val["-val"] == "1"}
+                end)
+                |> Map.new(),
               "AudioDelay" => data["AudioDelay"]["-val"] |> String.to_integer(),
               "AudioDelayLeftRear" => data["AudioDelayLeftRear"]["-val"] |> String.to_integer(),
               "AudioDelayRightRear" => data["AudioDelayRightRear"]["-val"] |> String.to_integer(),
@@ -67,48 +78,55 @@ defmodule Sonos.Server do
               "DialogLevel" => data["DialogLevel"]["-val"] |> String.to_integer(),
               "HeightChannelLevel" => data["HeightChannelLevel"]["-val"] |> String.to_integer(),
               "MusicSurroundLevel" => data["MusicSurroundLevel"]["-val"] |> String.to_integer(),
-              "SpeechEnhanceEnabled" => data["SpeechEnhanceEnabled"]["-val"] |> String.to_integer(),
+              "SpeechEnhanceEnabled" =>
+                data["SpeechEnhanceEnabled"]["-val"] |> String.to_integer(),
               "OutputFixed" => data["OutputFixed"]["-val"] |> String.to_integer(),
               "SpeakerSize" => data["SpeakerSize"]["-val"] |> String.to_integer(),
               "SubCrossover" => data["SubCrossover"]["-val"] |> String.to_integer(),
-
               "SurroundMode" => data["SurroundMode"]["-val"] |> String.to_integer(),
-              "SurroundEnabled" => data["SurroundEnabled"]["-val"] |> then(fn
-                "0" -> false
-                "1" -> true
-                _ -> nil
-              end),
-
-              "SonarCalibrationAvailable" => data["SonarCalibrationAvailable"]["-val"] |> then(fn
-                "0" -> false
-                "1" -> true
-                _ -> nil
-              end),
-
-              "SonarEnabled" => data["SonarEnabled"]["-val"] |> then(fn
-                "0" -> false
-                "1" -> true
-                _ -> nil
-              end),
-
-              "NightMode" => data["NightMode"]["-val"] |> then(fn
-                "0" -> false
-                "1" -> true
-                _ -> nil
-              end),
-
-              "PresetNameList" => case data["PresetNameList"]["-val"] do
-                str when is_binary(str) -> str |> String.split(",")
-                _ -> nil
-              end
+              "SurroundEnabled" =>
+                data["SurroundEnabled"]["-val"]
+                |> then(fn
+                  "0" -> false
+                  "1" -> true
+                  _ -> nil
+                end),
+              "SonarCalibrationAvailable" =>
+                data["SonarCalibrationAvailable"]["-val"]
+                |> then(fn
+                  "0" -> false
+                  "1" -> true
+                  _ -> nil
+                end),
+              "SonarEnabled" =>
+                data["SonarEnabled"]["-val"]
+                |> then(fn
+                  "0" -> false
+                  "1" -> true
+                  _ -> nil
+                end),
+              "NightMode" =>
+                data["NightMode"]["-val"]
+                |> then(fn
+                  "0" -> false
+                  "1" -> true
+                  _ -> nil
+                end),
+              "PresetNameList" =>
+                case data["PresetNameList"]["-val"] do
+                  str when is_binary(str) -> str |> String.split(",")
+                  _ -> nil
+                end
             }
 
-          {instance_id |> String.to_integer(), data}
-        end)
-        |> Map.new()
+            {instance_id |> String.to_integer(), data}
+          end)
+          |> Map.new()
 
-      _ -> vars
-    end
+        _ ->
+          vars
+      end
+
     __MODULE__ |> GenServer.cast({:update_device_state, usn, service, vars})
   end
 
@@ -127,35 +145,41 @@ defmodule Sonos.Server do
     * `{:ok, %{outputs: result}}` - Map of variable names to coerced values
     * `{:error, reason}` - Many possibilities that are internal to the cache.
   """
-  def cache_fetch(endpoint, service, inputs, outputs) when is_list(outputs) do
+  def cache_fetch(endpoint, service, inputs, outputs) when is_atom(service) and is_list(outputs) do
     output_original_names = outputs |> Enum.map(fn x -> x.original_name end)
 
-    __MODULE__ |> GenServer.call({:cache_fetch, endpoint, service, inputs, output_original_names})
+    __MODULE__
+    |> GenServer.call({:cache_fetch, endpoint, service, inputs, output_original_names})
     |> then(fn
       {:ok, %{outputs: result}} ->
-        result = outputs |> Enum.map(fn x ->
-          result = result[to_string(x.original_name)]
-          result = Sonos.Utils.coerce_data_type(result, x.data_type)
-          {x.name, result}
-        end)
-        |> Map.new()
+        result =
+          outputs
+          |> Enum.map(fn x ->
+            result = result[to_string(x.original_name)]
+            result = Sonos.Utils.coerce_data_type(result, x.data_type)
+            {x.name, result}
+          end)
+          |> Map.new()
+
         {:ok, %{outputs: result}}
+
       err ->
         err
     end)
   end
 
-  def handle_cast({:update_device_state, usn, service, vars}, state) do
-    state = state.devices[usn] |> then(fn
-      nil ->
-        Logger.warning("No device found for event received for usn #{usn}")
-        state
-      %Device{} = device ->
-        device = device |> Device.update_state(service, vars)
-        State.replace_device(state, device)
-    end)
+  def handle_cast({:update_device_state, usn, service, vars}, %State{} = state) when is_binary(service) do
+    short_usn = usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
 
-    {:noreply, state}
+    devices =
+      state.devices
+      |> Map.replace_lazy(short_usn, fn %Device{} = device ->
+        %Device{} = device |> Device.update_state(service, vars)
+      end)
+
+    state = %State{state | devices: devices}
+
+    {:noreply, %State{} = state}
   end
 
   def handle_cast({:update_device, %Sonos.SSDP.Device{} = device}, state) do
@@ -166,60 +190,89 @@ defmodule Sonos.Server do
 
     device |> Device.identify_task()
 
-    {:noreply, state}
+    {:noreply, %State{} = state}
   end
 
   def handle_cast({:remove_device, usn}, state) do
-    device = state.devices[usn]
-    state = State.remove_device(state, device)
+    state = state.devices[usn]
+    |> then(fn
+      nil -> :ok
+      %Device{} = device ->
+        state |> State.remove_device(device)
+    end)
 
-    {:noreply, state}
+    {:noreply, %State{} = state}
   end
 
   def handle_call(:state, _from, state) do
-    {:reply, state, state}
+    {:reply, state, %State{} = state}
   end
 
-  def handle_call({:cache_fetch, endpoint, service_module, inputs, vars}, _from, state) do
-    state.usn_by_endpoint[endpoint] |> then(fn
+  def handle_call({:cache_fetch, endpoint, service, inputs, vars}, _from, %State{} = state) when is_atom(service) do
+    state.usn_by_endpoint[endpoint]
+    |> then(fn
       nil ->
-        {:reply, {:error, :unsubscribed_device}, state}
+        {:reply, {:error, :unsubscribed_device}, %State{} = state}
+
       usn ->
-        state.devices[usn] |> then(fn
+        short_usn = usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+        state.devices[short_usn]
+        |> then(fn
           nil ->
-            {:reply, {:error, :unsubscribed_device}, state}
+            {:reply, {:error, :unsubscribed_device}, %State{} = state}
 
           %Sonos.Device{} = device ->
-            service = service_module.service_type()
-            |> String.replace("urn:schemas-upnp-org:service:", "")
+            service_key = service.service_type() |> String.replace("urn:schemas-upnp-org:service:", "")
 
-            device.state[service] |> then(fn
+            device.state[service_key]
+            |> then(fn
               nil ->
                 # there is nothing cached, so subscribe so next time we will have it.
-                device |> Device.subscribe_task(service_module, state.our_event_address)
+                {:ok, device_state} =
+                  device
+                  |> Device.subscribe(
+                    service,
+                    state.our_event_address,
+                    timeout: @default_subscribe_timeout
+                  )
 
-                {:reply, {:error, :unsubscribed_event}, state}
+                %Device{} = device = device |> Device.replace_state(service_key, device_state)
+                %State{} = state = State.replace_device(state, device)
+
+                {:reply, {:error, :unsubscribed_event}, %State{} = state}
+
+              %Device.State{state: nil} ->
+                # We have subscribed to this event type, but haven't received an initial event yet.
+                {:reply, {:error, :unsubscribed_event}, %State{} = state}
 
               %Device.State{} = devstate ->
                 # user has shown interest in this data, keep it up to date.
                 if devstate |> Device.State.expiring?() do
-                  # TODO FIXME this needs to use SID to resubscribe, Device.resubscribe_task(devstate.subscription_id, ...)
-                  device |> Device.subscribe_task(service_module, state.our_event_address)
+                  device |> Device.resubscribe_task(service)
                 end
+
                 vars = vars |> Enum.map(&to_string/1)
 
                 res = devstate.state |> Map.take(vars)
-                if res |> Enum.count() < vars |> Enum.count do
+
+                if res |> Enum.count() < vars |> Enum.count() do
                   missing_vars = vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
-                  case Sonos.Device.State.var_replacements(devstate, service_module, inputs, missing_vars) do
+
+                  case Sonos.Device.State.var_replacements(
+                         devstate,
+                         service,
+                         inputs,
+                         missing_vars
+                       ) do
                     {:ok, replacement_vars} ->
                       res = res |> Map.merge(replacement_vars)
-                      {:reply, {:ok, %{outputs: res}}, state}
+                      {:reply, {:ok, %{outputs: res}}, %State{} = state}
+
                     {:error, {:still_missing_vars, missing_vars}} ->
-                      {:reply, {:error, {:missing_vars, missing_vars}}, state}
+                      {:reply, {:error, {:missing_vars, missing_vars}}, %State{} = state}
                   end
                 else
-                  {:reply, {:ok, %{outputs: res}}, state}
+                  {:reply, {:ok, %{outputs: res}}, %State{} = state}
                 end
             end)
         end)
@@ -236,7 +289,22 @@ defmodule Sonos.Server do
     {:noreply, state}
   end
 
-  def handle_info({_ref, {:ok, %Device{} = device}}, state) do
+  def handle_info({_ref, {:resubscribed, usn, service_key, {:ok, %DateTime{} = dt}}}, state) do
+    Logger.info("resubscribed to #{service_key} on #{usn}")
+    usn = usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    state = %State{
+      state
+      | devices:
+          state.devices
+          |> Map.replace_lazy(usn, fn device ->
+            device |> Device.rebuscribed(service_key, dt)
+         end)
+    }
+
+    {:noreply, state}
+  end
+
+  def handle_info({_ref, {:identified, {:ok, %Device{} = device}}}, state) do
     short_usn = device.usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
     state = update_in(state.devices, &Map.put(&1, short_usn, device))
     state = update_in(state.usn_by_endpoint, &Map.put(&1, device.endpoint, short_usn))

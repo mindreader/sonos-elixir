@@ -32,7 +32,8 @@ defmodule Sonos.SSDP do
     end
 
     def stale_devices(%State{} = state) do
-      state.devices |> Map.filter(fn {_usn, device} ->
+      state.devices
+      |> Map.filter(fn {_usn, device} ->
         # Logger.info("Checking device #{usn} last seen at #{inspect(device.last_seen_at)}")
         Timex.now() |> Timex.after?(device.last_seen_at |> Timex.shift(seconds: device.max_age))
       end)
@@ -82,6 +83,7 @@ defmodule Sonos.SSDP do
     # ssdp enabled devices and will have to filter them out anyways, so I might as well use the standard ssdp
     # root device query instead in case there is some future where a device doesn't advertise ZonePlayer.
     "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:reservedSSDPport\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: urn:schemas-upnp-org:device:ZonePlayer:1\r\n"
+
     # "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: ssdp:discover\r\nMX: 1\r\nST: upnp:rootdevice\r\n"
   end
 
@@ -95,7 +97,8 @@ defmodule Sonos.SSDP do
 
   def handle_continue(:startup, state) do
     handle_cast({:scan, search()}, state)
-    handle_cast(:remove_old_devices, state)
+    Process.send_after(self(), :remove_old_devices, :timer.seconds(60))
+    {:noreply, state}
   end
 
   def handle_call(:state, _from, state) do
@@ -107,7 +110,8 @@ defmodule Sonos.SSDP do
     subscriber = SSDP.Subscriber.new(pid, subject)
     state = update_in(state.subscribers, &Map.put(&1, pid, subscriber))
 
-    state.devices |> Enum.each(fn {_usn, device} ->
+    state.devices
+    |> Enum.each(fn {_usn, device} ->
       if SSDP.Subscriber.relevant_device(subscriber, device) do
         GenServer.cast(pid, {:update_device, device})
       end
@@ -131,14 +135,18 @@ defmodule Sonos.SSDP do
       Logger.info("Removing stale devices #{stale_devices |> Map.keys() |> Enum.join(", ")}")
     end
 
-    state = stale_devices |> Enum.reduce(state, fn {usn, device}, state ->
-      state.subscribers |> Enum.each(fn {pid, subscriber} ->
-        if SSDP.Subscriber.relevant_device(subscriber, device) do
-          GenServer.cast(pid, {:remove_device, usn})
-        end
+    state =
+      stale_devices
+      |> Enum.reduce(state, fn {usn, device}, state ->
+        state.subscribers
+        |> Enum.each(fn {pid, subscriber} ->
+          if SSDP.Subscriber.relevant_device(subscriber, device) do
+            GenServer.cast(pid, {:remove_device, usn})
+          end
+        end)
+
+        State.remove_device(state, usn)
       end)
-      State.remove_device(state, usn)
-    end)
 
     Process.send_after(self(), :remove_old_devices, :timer.seconds(60))
 
@@ -162,19 +170,25 @@ defmodule Sonos.SSDP do
          {:headers, headers} <- {:headers, msg.headers |> Map.new()},
          {:usn, usn} when is_binary(usn) <- {:usn, headers["usn"]},
          {:nts, nts} <- {:nts, headers["nts"]} do
+      action =
+        cond do
+          # an HTTP response to our scan will not have an nts, but is an advertisement that it exists.
+          is_nil(nts) ->
+            :update
 
-      action = cond do
-        # an HTTP response to our scan will not have an nts, but is an advertisement that it exists.
-        is_nil(nts) -> :update
-        # a NOTIFY with an NTS of ssdp:alive is an advertisement that the device is still alive.
-        nts == "ssdp:alive" -> :update
-        # a NOTIFY with NTS of ssdp:byebye means the device is going away.
-        nts == "ssdp:byebye" -> :remove
-        true ->
-          # this shouldn't happen, but who knows what non compliant devices are out there.
-          Logger.warning("Unhandled NTS on a message from #{inspect(ip)}: #{inspect(nts)}")
-          :update
-      end
+          # a NOTIFY with an NTS of ssdp:alive is an advertisement that the device is still alive.
+          nts == "ssdp:alive" ->
+            :update
+
+          # a NOTIFY with NTS of ssdp:byebye means the device is going away.
+          nts == "ssdp:byebye" ->
+            :remove
+
+          true ->
+            # this shouldn't happen, but who knows what non compliant devices are out there.
+            Logger.warning("Unhandled NTS on a message from #{inspect(ip)}: #{inspect(nts)}")
+            :update
+        end
 
       state =
         case {action, state.devices[usn]} do
@@ -184,7 +198,8 @@ defmodule Sonos.SSDP do
           {:remove, device} ->
             Logger.info("Removing device #{inspect(usn)} from network (#{device.server})")
 
-            state.subscribers |> Enum.each(fn {pid, subscriber} ->
+            state.subscribers
+            |> Enum.each(fn {pid, subscriber} ->
               if SSDP.Subscriber.relevant_device(subscriber, device) do
                 GenServer.cast(pid, {:remove_device, usn})
               end
@@ -196,7 +211,8 @@ defmodule Sonos.SSDP do
             with {:ok, %SSDP.Device{} = device} <- SSDP.Device.from_headers(msg, ip) do
               Logger.info("Noticed new device #{inspect(usn)} on network (#{device.server})")
 
-              state.subscribers |> Enum.each(fn {pid, subscriber} ->
+              state.subscribers
+              |> Enum.each(fn {pid, subscriber} ->
                 if SSDP.Subscriber.relevant_device(subscriber, device) do
                   GenServer.cast(pid, {:update_device, device})
                 end
@@ -215,13 +231,14 @@ defmodule Sonos.SSDP do
             # our knowledge about the device as fields may have changed.
             if headers["bootid.upnp.org"] != old_bootid do
               Logger.info("Replacing device #{inspect(usn)} due to bootid increment")
-              state.subscribers |> Enum.each(fn {pid, subscriber} ->
+
+              state.subscribers
+              |> Enum.each(fn {pid, subscriber} ->
                 if SSDP.Subscriber.relevant_device(subscriber, device) do
                   GenServer.cast(pid, {:update_device, device})
                 end
               end)
             end
-
 
             state |> State.replace_device(device)
         end
@@ -233,6 +250,7 @@ defmodule Sonos.SSDP do
         # other ssdp devices. If there is no usn, it probably isn't an advertisement of a device.
         # body |> IO.inspect(label: "body")
         {:noreply, state}
+
       error ->
         Logger.info("Error parsing message #{inspect(error)}")
         {:noreply, state}

@@ -81,6 +81,7 @@ defmodule Sonos.SSDP.Message do
         _ ->
           nil
       end
+
     # TODO FIXME some actual error detection here would be nice.
     {:ok, res}
   end

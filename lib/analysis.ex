@@ -38,11 +38,16 @@ defmodule Analysis do
           %{
             name: device["modelName"],
             type: device["deviceType"],
-            services: device["serviceList"]["service"] |> Sonos.Utils.coerce_to_list() |> Enum.map(servicef)
+            services:
+              device["serviceList"]["service"]
+              |> Sonos.Utils.coerce_to_list()
+              |> Enum.map(servicef)
           }
         end
 
-        sub_devices = root_device["deviceList"]["device"] |> Sonos.Utils.coerce_to_list() |> Enum.map(devicef)
+        sub_devices =
+          root_device["deviceList"]["device"] |> Sonos.Utils.coerce_to_list() |> Enum.map(devicef)
+
         root_device = devicef.(root_device)
 
         [root_device | sub_devices]
@@ -117,7 +122,8 @@ defmodule Analysis do
           |> Enum.map(statef)
           |> Enum.group_by(& &1.name)
 
-        actionList = scpd["actionList"]["action"] |> Sonos.Utils.coerce_to_list() |> Enum.map(actionf)
+        actionList =
+          scpd["actionList"]["action"] |> Sonos.Utils.coerce_to_list() |> Enum.map(actionf)
 
         %{
           actions: actionList,

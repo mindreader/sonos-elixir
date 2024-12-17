@@ -72,6 +72,50 @@ defmodule Sonos.Utils do
     end
   end
 
+  def subscription_parse(headers) do
+    sidf = fn headers ->
+      headers
+      |> Enum.find_value(fn {k, v} ->
+        if k == "SID" || k == "sid" do
+          v
+        end
+      end)
+      |> then(fn
+        nil -> {:error, :no_sid}
+        sid -> sid |> String.trim()
+      end)
+    end
+
+    timeoutf = fn headers ->
+      headers
+      |> Enum.find_value(fn {k, v} ->
+        if k == "TIMEOUT" || k == "timeout" do
+          v
+        end
+      end)
+      |> then(fn
+        nil ->
+          {:error, :no_timeout}
+
+        timeout ->
+          timeout
+          |> then(fn "Second-" <> timeout -> timeout end)
+          |> Integer.parse()
+          |> then(fn
+            {num, _} -> num
+            _ -> 60
+          end)
+      end)
+    end
+
+    with sid when is_binary(sid) <- sidf.(headers),
+         timeout when is_integer(timeout) <- timeoutf.(headers) do
+      {:ok, {sid, timeout}}
+    else
+      err -> err
+    end
+  end
+
   # xml to json doesn't always return lists because it doesn't know if there will be more than
   # one attribute of a type in xml tag, so we coerce things we know are meant to be lists.
   def coerce_to_list(x) do
@@ -89,7 +133,8 @@ defmodule Sonos.Utils do
   """
   def coerce_data_type(dt, type) when type in @data_types do
     cond do
-      is_nil(dt) -> nil
+      is_nil(dt) ->
+        nil
 
       is_binary(dt) ->
         case type do
