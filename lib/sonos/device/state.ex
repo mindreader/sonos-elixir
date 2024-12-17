@@ -6,9 +6,9 @@ defmodule Sonos.Device.State do
     timeout = opts[:timeout] || 60 * 5
 
     %State{
-      # service_key is a truncated version of the service type. It is truncated so that
-      # it can be specified in our endpoint url. (sonos devices don't support long urls)
       # Map (service_key -> Map (var_name -> value))
+      # Sometimes we have to preprocess the state to make it easier to use, other times it is
+      # just a raw dump of what the server sent us.
       state: nil,
 
       # we request this timeout on subscribe/resubscribe soap calls.
@@ -81,9 +81,7 @@ defmodule Sonos.Device.State do
           missing_vars
           |> Enum.reduce(%{}, fn var, accum ->
             case alternative_vars |> Map.get(var) do
-              nil ->
-                accum
-
+              nil -> accum
               f ->
                 inputs |> IO.inspect(label: "inputs")
                 accum |> Map.put(var, f.(state.state))
