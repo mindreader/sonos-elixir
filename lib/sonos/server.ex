@@ -26,6 +26,8 @@ defmodule Sonos.Server do
         usn_by_endpoint: %{}
       }
 
+      # TODO FIXME there needs to be a periodic purging of expiring subscriptions
+
       {:ok, state, {:continue, :subscribe}}
     else
       err -> err
@@ -33,9 +35,12 @@ defmodule Sonos.Server do
   end
 
   def update_device_state(usn, service, vars) when is_binary(service) do
+    vars |> IO.inspect(label: "vars")
     vars =
       case service do
-        # This one is special because it returns a big xml blob that has to be parsed specially.
+        # This one is special because it returns a big xml blob that has to be parsed specially, which
+        # in itself is not a problem, but updates are sent piecemeal as nested xml elements, which must be
+        # merged with the existing nested state.
         "RenderingControl:1" ->
           vars["LastChange"]
           |> XmlToMap.naive_map()
@@ -131,6 +136,7 @@ defmodule Sonos.Server do
                         _ -> nil
                       end)
 
+                    # comma separated list of strings
                     "PresetNameList" ->
                       val["-val"] |> String.split(",")
                   end
@@ -141,9 +147,21 @@ defmodule Sonos.Server do
             {instance_id |> String.to_integer(), data}
           end)
           |> Map.new()
+
+        # most if not all other types of services are just simple key-value pairs, so we can just
+        # merge them with the existing state variable by variable. All states I have seen send the
+        # entire value of each variable, even if they are large. For example, the `ZoneGroupState`
+        # sends the state of all devices even if this one is not grouped with any others.
+        _ ->
+          vars
       end
 
     __MODULE__ |> GenServer.cast({:update_device_state, usn, service, vars})
+  end
+
+  def cache_service(endpoint, service) when is_atom(service) do
+    __MODULE__ |> GenServer.call({:cache_fetch, endpoint, service, [], []})
+    :ok
   end
 
   @doc """
@@ -264,13 +282,13 @@ defmodule Sonos.Server do
 
                 {:reply, {:error, :unsubscribed_event}, %State{} = state}
 
-              %Device.State{state: nil} ->
+              %Device.Subscription{state: nil} ->
                 # We have subscribed to this event type, but haven't received an initial event yet.
                 {:reply, {:error, :unsubscribed_event}, %State{} = state}
 
-              %Device.State{} = devstate ->
+              %Device.Subscription{} = devstate ->
                 # user has shown interest in this data, keep it up to date.
-                if devstate |> Device.State.expiring?() do
+                if devstate |> Device.Subscription.expiring?() do
                   device |> Device.resubscribe_task(service)
                 end
 
@@ -281,7 +299,7 @@ defmodule Sonos.Server do
                 if res |> Enum.count() < vars |> Enum.count() do
                   missing_vars = vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
 
-                  case Sonos.Device.State.var_replacements(
+                  case Sonos.Device.Subscription.var_replacements(
                          devstate,
                          service,
                          inputs,

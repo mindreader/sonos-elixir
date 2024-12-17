@@ -1,5 +1,5 @@
 defmodule Sonos.Device do
-  alias Sonos.Device.State
+  alias Sonos.Device.Subscription
 
   defstruct usn: nil,
             ip: nil,
@@ -15,15 +15,15 @@ defmodule Sonos.Device do
   alias __MODULE__
   require Logger
 
-  def replace_state(%Device{} = device, service, %State{} = state) when is_binary(service) do
+  def replace_state(%Device{} = device, service, %Subscription{} = state) when is_binary(service) do
     %Device{device | state: device.state |> Map.put(service, state)}
   end
 
   def subscribed(%Device{} = device, service, sid, max_age) when is_binary(service) do
     device_state =
       device.state
-      |> Map.replace_lazy(service, fn %State{} = state ->
-        %State{state | subscription_id: sid, max_age: max_age}
+      |> Map.replace_lazy(service, fn %Subscription{} = state ->
+        %Subscription{state | subscription_id: sid, max_age: max_age}
       end)
 
     %Device{device | state: device_state}
@@ -32,8 +32,8 @@ defmodule Sonos.Device do
   def rebuscribed(%Device{} = device, service, %DateTime{} = dt) when is_binary(service) do
     device_state =
       device.state
-      |> Map.replace_lazy(service, fn %State{} = state ->
-        %State{} = state |> State.resubscribed(dt)
+      |> Map.replace_lazy(service, fn %Subscription{} = state ->
+        %Subscription{} = state |> Subscription.resubscribed(dt)
       end)
 
     %Device{device | state: device_state}
@@ -42,8 +42,8 @@ defmodule Sonos.Device do
   def merge_state(%Device{} = device, service, vars) when is_binary(service) do
     device_state =
       device.state
-      |> Map.replace_lazy(service, fn %State{} = state ->
-        %State{} = state |> State.merge(service, vars)
+      |> Map.replace_lazy(service, fn %Subscription{} = state ->
+        %Subscription{} = state |> Subscription.merge(service, vars)
       end)
 
     %Device{device | state: device_state}
@@ -60,7 +60,7 @@ defmodule Sonos.Device do
       {:subscribed, device.usn, service_key, subscribe(device, service, event_address, opts)}
     end)
 
-    device_state = State.new(timeout: timeout)
+    device_state = Subscription.new(timeout: timeout)
     device = device |> replace_state(service_key, device_state)
 
     {:ok, %Device{} = device}
@@ -97,19 +97,19 @@ defmodule Sonos.Device do
       nil ->
         {:error, :no_state}
 
-      %State{subscription_id: nil} ->
+      %Subscription{subscription_id: nil} ->
         # we process the subscription request asynchronously because we don't want to block the
         # caller, we should never attempt this but if something wierd happens, better not to crash.
         {:error, :no_subscription_id_yet}
 
-      %State{} = state ->
+      %Subscription{} = state ->
         Task.Supervisor.async(Sonos.Tasks, fn ->
           {:resubscribed, device.usn, service_key, resubscribe(device, service, state)}
         end)
     end)
   end
 
-  def resubscribe(%Sonos.Device{} = device, service, %State{} = state) do
+  def resubscribe(%Sonos.Device{} = device, service, %Subscription{} = state) do
     service
     |> apply(:resubscribe, [device.endpoint, state.subscription_id, [timeout: state.timeout]])
     |> then(fn

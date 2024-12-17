@@ -1,11 +1,11 @@
-defmodule Sonos.Device.State do
+defmodule Sonos.Device.Subscription do
   alias __MODULE__
   defstruct state: nil, subscription_id: nil, timeout: nil, max_age: nil, last_updated_at: nil
 
   def new(opts \\ []) do
     timeout = opts[:timeout] || 60 * 5
 
-    %State{
+    %Subscription{
       # Map (service_key -> Map (var_name -> value))
       # Sometimes we have to preprocess the state to make it easier to use, other times it is
       # just a raw dump of what the server sent us.
@@ -26,11 +26,11 @@ defmodule Sonos.Device.State do
 
   def merge(state, _service, vars, _opts \\ [])
 
-  def merge(%State{state: nil} = state, _service, vars, _opts) do
-    %State{state | state: vars, last_updated_at: Timex.now()}
+  def merge(%Subscription{state: nil} = state, _service, vars, _opts) do
+    %Subscription{state | state: vars, last_updated_at: Timex.now()}
   end
 
-  def merge(%State{} = state, service, vars, _opts) do
+  def merge(%Subscription{} = state, service, vars, _opts) do
     substate =
       case service do
         # RenderingControl:1 is broken down by instance id, for each instance merge only changed vars
@@ -47,19 +47,19 @@ defmodule Sonos.Device.State do
           state.state |> Map.merge(vars)
       end
 
-    %State{state | state: substate, last_updated_at: Timex.now()}
+    %Subscription{state | state: substate, last_updated_at: Timex.now()}
   end
 
-  def resubscribed(%State{} = state, %DateTime{} = dt) do
-    %State{state | last_updated_at: dt}
+  def resubscribed(%Subscription{} = state, %DateTime{} = dt) do
+    %Subscription{state | last_updated_at: dt}
   end
 
-  def expiring?(%State{} = state) do
+  def expiring?(%Subscription{} = state) do
     half_max_age = state.max_age |> div(2)
     state.last_updated_at |> Timex.shift(seconds: half_max_age) |> Timex.before?(Timex.now())
   end
 
-  def var_replacements(%State{} = state, service, inputs, missing_vars) do
+  def var_replacements(%Subscription{} = state, service, inputs, missing_vars) do
     case service.service_type() do
       "urn:schemas-upnp-org:service:RenderingControl:1" ->
         alternative_vars = %{

@@ -55,7 +55,6 @@ defmodule Sonos.SSDP do
       mode: :binary,
       reuseaddr: true,
       active: 10,
-      # active: true, # TODO FIXME use active: 1 and passive udp
 
       # multicast receiving options (we're listening on all interfaces)
       add_membership: {@multicast_group, {0, 0, 0, 0}},
