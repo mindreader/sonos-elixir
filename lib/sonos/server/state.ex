@@ -26,7 +26,7 @@ defmodule Sonos.Server.State do
     %State{
       state
       | devices: state.devices |> Map.delete(short_usn),
-      usn_by_endpoint: state.usn_by_endpoint |> Map.delete(endpoint)
+        usn_by_endpoint: state.usn_by_endpoint |> Map.delete(endpoint)
     }
   end
 
@@ -38,17 +38,6 @@ defmodule Sonos.Server.State do
       | devices: state.devices |> Map.delete(short_usn),
         usn_by_endpoint: state.usn_by_endpoint |> Map.delete(device.endpoint)
     }
-  end
-
-  @doc """
-  Parses the current volume related settings from individual devices.
-  """
-  def current_volume_parse(val) do
-    if is_integer(val) do
-      val
-    else
-      val |> IO.inspect(label: "current volume!")
-    end
   end
 
   @doc """

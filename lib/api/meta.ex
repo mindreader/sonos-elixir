@@ -391,33 +391,34 @@ defmodule Sonos.Api.Meta do
     inputs = action.inputs |> Enum.map(fn x -> {x.original_name, Macro.var(x.name, nil)} end)
     endpoint = Macro.var(:endpoint, nil)
 
-    soap_fetch = quote do
-      Sonos.Soap.Control.new(
-        unquote(control_url),
-        unquote(service_type),
-        unquote(action.original_name),
-        unquote(inputs)
-      )
-      |> Sonos.Soap.request(unquote(endpoint))
-      |> Sonos.Soap.response(
-        unquote(action.original_name),
-        unquote(action.outputs |> Macro.escape())
-      )
-      |> then(fn x ->
-        {:soap, x}
-      end)
-    end
+    soap_fetch =
+      quote do
+        Sonos.Soap.Control.new(
+          unquote(control_url),
+          unquote(service_type),
+          unquote(action.original_name),
+          unquote(inputs)
+        )
+        |> Sonos.Soap.request(unquote(endpoint))
+        |> Sonos.Soap.response(
+          unquote(action.original_name),
+          unquote(action.outputs |> Macro.escape())
+        )
+        |> then(fn x ->
+          {:soap, x}
+        end)
+      end
 
     # all "get_" functions we check the cache for data.
     cache_fetch =
       if action.name |> to_string |> String.starts_with?("get_") do
         quote do
           case Sonos.Server.cache_fetch(
-                unquote(endpoint),
-                unquote(service_module),
-                unquote(inputs),
-                unquote(action.outputs |> Macro.escape())
-              ) do
+                 unquote(endpoint),
+                 unquote(service_module),
+                 unquote(inputs),
+                 unquote(action.outputs |> Macro.escape())
+               ) do
             {:ok, _} = res ->
               {:cache, res}
 
@@ -433,6 +434,7 @@ defmodule Sonos.Api.Meta do
             %{},
             []
           )
+
           unquote(soap_fetch)
         end
       end

@@ -15,8 +15,6 @@ defmodule SonosWeb.Events do
       end)
       |> Map.new()
 
-    conn.resp_headers |> IO.inspect(label: "headers")
-
     Sonos.Server.update_device_state(usn, service, vars)
 
     json = %{success: true} |> Jason.encode!()

@@ -1,109 +1,5 @@
 defmodule Sonos.Device do
-  defmodule State do
-    alias __MODULE__
-    defstruct state: nil, subscription_id: nil, timeout: nil, max_age: nil, last_updated_at: nil
-
-    def new(subscription_id, opts \\ []) do
-      timeout = opts[:timeout] || 60 * 5
-      max_age = opts[:max_age] || 60
-
-      %State{
-        # service_key is a truncated version of the service type. It is truncated so that
-        # it can be specified in our endpoint url. (sonos devices don't support long urls)
-        # Map (service_key -> Map (var_name -> value))
-        state: nil,
-
-        # returned from the original subscribe call
-        subscription_id: subscription_id,
-
-        # we request this timeout on subscribe/resubscribe soap calls.
-        timeout: timeout,
-
-        # this is how long it is willing to persist a subscription
-        max_age: max_age,
-
-        # this is the last time we saw a message from them for this device.
-        last_updated_at: Timex.now()
-      }
-    end
-
-    def update(%State{} = state, vars, _opts \\ []) do
-      %State{state | state: vars, last_updated_at: Timex.now()}
-    end
-
-    def resubscribed(%State{} = state, %DateTime{} = dt) do
-      %State{state | last_updated_at: dt}
-    end
-
-    def expiring?(%State{} = state) do
-      half_max_age = state.max_age |> div(2)
-      state.last_updated_at |> Timex.shift(seconds: half_max_age) |> Timex.before?(Timex.now())
-    end
-
-    def var_replacements(%State{} = state, service, inputs, missing_vars) do
-      case service.service_type() do
-        "urn:schemas-upnp-org:service:RenderingControl:1" ->
-          alternative_vars = %{
-            "CurrentVolume" => fn state ->
-              state[inputs[:InstanceID]]["Volume"]["#{inputs[:Channel]}"]
-            end,
-            "CurrentMute" => fn state ->
-              state[inputs[:InstanceID]]["Mute"]["#{inputs[:Channel]}"]
-            end,
-            "CurrentLoudness" => fn state ->
-              state[inputs[:InstanceID]]["Loudness"]["#{inputs[:Channel]}"]
-            end,
-            "CurrentValue" => fn state ->
-              state[inputs[:InstanceID]]["#{inputs[:EQType]}"]
-            end
-          }
-
-          res =
-            missing_vars
-            |> Enum.reduce(%{}, fn var, accum ->
-              case alternative_vars[var] do
-                nil -> accum
-                f -> accum |> Map.put(var, f.(state.state))
-              end
-            end)
-
-          if res |> Enum.count() == missing_vars |> Enum.count() do
-            {:ok, res}
-          else
-            still_missing_vars = missing_vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
-            {:error, {:still_missing_vars, still_missing_vars}}
-          end
-
-        "urn:schemas-upnp-org:service:GroupRenderingControl:1" ->
-          alternative_vars = %{
-            "CurrentVolume" => "GroupVolume",
-            "CurrentMute" => "GroupMute"
-          }
-
-          res =
-            missing_vars
-            |> Enum.reduce(%{}, fn var, accum ->
-              case alternative_vars[var] do
-                nil ->
-                  accum
-
-                alternate ->
-                  accum |> Map.put(var, state.state[alternate])
-              end
-            end)
-
-          if res |> Enum.count() == missing_vars |> Enum.count() do
-            {:ok, res}
-          else
-            still_missing_vars = missing_vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
-            {:error, {:still_missing_vars, still_missing_vars}}
-          end
-
-        _ ->
-          {:error, {:still_missing_vars, missing_vars}}
-      end
-    end
-  end
+  alias Sonos.Device.State
 
   defstruct usn: nil,
             ip: nil,
@@ -123,30 +19,55 @@ defmodule Sonos.Device do
     %Device{device | state: device.state |> Map.put(service, state)}
   end
 
+  def subscribed(%Device{} = device, service, sid, max_age) when is_binary(service) do
+    device_state =
+      device.state
+      |> Map.replace_lazy(service, fn %State{} = state ->
+        %State{state | subscription_id: sid, max_age: max_age}
+      end)
+
+    %Device{device | state: device_state}
+  end
+
   def rebuscribed(%Device{} = device, service, %DateTime{} = dt) when is_binary(service) do
-    device_state = device.state |> Map.replace_lazy(service, fn %State{} = state ->
-      %State{} = state |> State.resubscribed(dt)
-    end)
+    device_state =
+      device.state
+      |> Map.replace_lazy(service, fn %State{} = state ->
+        %State{} = state |> State.resubscribed(dt)
+      end)
 
     %Device{device | state: device_state}
   end
 
-  def update_state(%Device{} = device, service, vars) when is_binary(service) do
-    device_state = device.state |> Map.replace_lazy(service, fn %State{} = state ->
-      %State{} = state |> State.update(vars)
-    end)
+  def merge_state(%Device{} = device, service, vars) when is_binary(service) do
+    device_state =
+      device.state
+      |> Map.replace_lazy(service, fn %State{} = state ->
+        %State{} = state |> State.merge(service, vars)
+      end)
+
     %Device{device | state: device_state}
   end
 
-  #  as much as I'd like to background this, I have to be ready to receive the events
-  #  from the subscription it creates, before those events can be processed.
-  #  def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ []) do
-  #    Task.Supervisor.async(Sonos.Tasks, fn ->
-  #      {:subscribed, service, subscribe(device, service, event_address, opts)}
-  #    end)
-  #  end
+  def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ []) do
+    timeout = opts[:timeout] || 60 * 5
 
-  def subscribe(%Sonos.Device{} = device, service, event_address, opts \\ []) when is_atom(service) do
+    service_key =
+      service.service_type()
+      |> String.replace("urn:schemas-upnp-org:service:", "")
+
+    Task.Supervisor.async(Sonos.Tasks, fn ->
+      {:subscribed, device.usn, service_key, subscribe(device, service, event_address, opts)}
+    end)
+
+    device_state = State.new(timeout: timeout)
+    device = device |> replace_state(service_key, device_state)
+
+    {:ok, %Device{} = device}
+  end
+
+  def subscribe(%Sonos.Device{} = device, service, event_address, opts \\ [])
+      when is_atom(service) do
     timeout = opts[:timeout] || 60 * 5
 
     Logger.info("subscribing to #{service.service_type()} on #{device.usn}")
@@ -159,15 +80,7 @@ defmodule Sonos.Device do
       {:ok, %HTTPoison.Response{headers: headers, status_code: 200}} ->
         # this is the "subscription id", and it can be used to renew a subscription that
         # has not yet expired.
-        {:ok, {sid, max_age}} = headers |> Sonos.Utils.subscription_parse()
-
-        device_state = State.new(sid, max_age: max_age, timeout: timeout)
-
-        if sid do
-          {:ok, %State{} = device_state}
-        else
-          {:error, :no_sid}
-        end
+        {:ok, {_sid, _max_age}} = headers |> Sonos.Utils.subscription_parse()
 
       err ->
         err
@@ -175,16 +88,6 @@ defmodule Sonos.Device do
   end
 
   def resubscribe_task(%Sonos.Device{} = device, service) when is_atom(service) do
-    Task.Supervisor.async(Sonos.Tasks, fn ->
-      service_key =
-        service.service_type()
-        |> String.replace("urn:schemas-upnp-org:service:", "")
-
-      {:resubscribed, device.usn, service_key, resubscribe(device, service)}
-    end)
-  end
-
-  def resubscribe(%Sonos.Device{} = device, service) do
     service_key =
       service.service_type()
       |> String.replace("urn:schemas-upnp-org:service:", "")
@@ -194,13 +97,24 @@ defmodule Sonos.Device do
       nil ->
         {:error, :no_state}
 
+      %State{subscription_id: nil} ->
+        # we process the subscription request asynchronously because we don't want to block the
+        # caller, we should never attempt this but if something wierd happens, better not to crash.
+        {:error, :no_subscription_id_yet}
+
       %State{} = state ->
-        service
-        |> apply(:resubscribe, [device.endpoint, state.subscription_id, [timeout: state.timeout]])
-        |> then(fn
-          {:ok, %HTTPoison.Response{status_code: 200}} ->
-            {:ok, Timex.now()}
+        Task.Supervisor.async(Sonos.Tasks, fn ->
+          {:resubscribed, device.usn, service_key, resubscribe(device, service, state)}
         end)
+    end)
+  end
+
+  def resubscribe(%Sonos.Device{} = device, service, %State{} = state) do
+    service
+    |> apply(:resubscribe, [device.endpoint, state.subscription_id, [timeout: state.timeout]])
+    |> then(fn
+      {:ok, %HTTPoison.Response{status_code: 200}} ->
+        {:ok, Timex.now()}
     end)
   end
 
