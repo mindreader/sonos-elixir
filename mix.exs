@@ -16,7 +16,7 @@ defmodule SonosElixir.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      mod: {Sonos, []},
+      mod: {Sonos.Supervisor, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end

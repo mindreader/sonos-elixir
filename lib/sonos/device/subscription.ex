@@ -81,7 +81,9 @@ defmodule Sonos.Device.Subscription do
           missing_vars
           |> Enum.reduce(%{}, fn var, accum ->
             case alternative_vars |> Map.get(var) do
-              nil -> accum
+              nil ->
+                accum
+
               f ->
                 inputs |> IO.inspect(label: "inputs")
                 accum |> Map.put(var, f.(state.state))

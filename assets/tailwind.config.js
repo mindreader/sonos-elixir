@@ -33,7 +33,7 @@ module.exports = {
     // See your `CoreComponents.icon/1` for more information.
     //
     plugin(function({matchComponents, theme}) {
-      console.log('matchComponents', matchComponents)
+
       let iconsDir = path.join(__dirname, "../deps/heroicons/optimized")
       let values = {}
       let icons = [
@@ -48,6 +48,7 @@ module.exports = {
           values[name] = {name, fullPath: path.join(iconsDir, dir, file)}
         })
       })
+
       matchComponents({
         "hero": ({name, fullPath}) => {
           console.log("loading ", name, fullPath)
@@ -68,6 +69,35 @@ module.exports = {
             "display": "inline-block",
             "width": size,
             "height": size
+          }
+        }
+      }, {values})
+    }),
+
+    plugin(function({matchComponents, theme}) {
+
+      let iconsDir = path.join(__dirname, "../assets/icons")
+      let values = {}
+
+      fs.readdirSync(iconsDir).forEach(file => {
+        let name = path.basename(file, ".svg")
+        values[name] = {name, fullPath: path.join(iconsDir, file)}
+      })
+
+      matchComponents({
+        "icon": ({name, fullPath}) => {
+          console.log("loading ", name, fullPath)
+          let content = fs.readFileSync(fullPath).toString().replace(/\r?\n|\r/g, "")
+          return {
+            [`--icon-${name}`]: `url('data:image/svg+xml;utf8,${content}')`,
+            "-webkit-mask": `var(--icon-${name})`,
+            "mask": `var(--icon-${name})`,
+            "mask-repeat": "no-repeat",
+            "background-color": "currentColor",
+            "vertical-align": "middle",
+            "display": "inline-block",
+            "width": theme("spacing.6"),
+            "height": theme("spacing.6")
           }
         }
       }, {values})

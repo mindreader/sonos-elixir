@@ -524,6 +524,61 @@ defmodule SonosWeb.CoreComponents do
     """
   end
 
+  attr(:id, :string, required: true)
+  attr(:target, :any, required: true)
+  attr(:name, :string, required: true)
+  attr(:playing, :boolean, default: false)
+  attr(:shuffle, :boolean, default: false)
+  attr(:continue, :boolean, default: false)
+
+  def player_group(assigns) do
+    ~H"""
+    <div id={@id} class="bg-slate-500 text-white m-2 p-2 rounded-lg">
+      <div class="mx-2">
+        <%= @name %>
+      </div>
+
+      <div class="flex flex-nowrap gap-2 mx-2">
+        <button
+          phx-click="shuffle"
+          phx-target={@target}
+          value={@id}
+          class={["my-auto rounded-full", @shuffle && "text-slate-500 bg-white"]}
+        >
+          <.icon name="icon-shuffle" />
+        </button>
+
+        <button phx-click="previous" phx-target={@target} value={@id}>
+          <.icon name="hero-backward"/>
+        </button>
+
+        <button :if={!@playing} phx-click="play" phx-target={@target} value={@id}>
+          <.icon name="hero-play-solid" class="size-10" />
+        </button>
+        <button :if={@playing} phx-click="pause" phx-target={@target} value={@id}>
+          <.icon name="hero-pause-solid" class="size-10" />
+        </button>
+
+        <button phx-click="next" phx-target={@target} value={@id}>
+          <.icon name="hero-forward" />
+        </button>
+
+        <button
+          phx-click="continue"
+          phx-target={@target}
+          value={@id}
+          class={["my-auto rounded-full", @continue && "text-slate-500 bg-white"] }
+        >
+          <.icon name="hero-arrow-path-mini" class=""/>
+        </button>
+
+        <input type="range" name="volume" min="0" max="100" value="50" class="ml-2 w-full"/>
+
+      </div>
+    </div>
+    """
+  end
+
   @doc """
   Renders a data list.
 
@@ -597,6 +652,12 @@ defmodule SonosWeb.CoreComponents do
   attr(:class, :string, default: nil)
 
   def icon(%{name: "hero-" <> _} = assigns) do
+    ~H"""
+    <span class={[@name, @class]} />
+    """
+  end
+
+  def icon(%{name: "icon-" <> _} = assigns) do
     ~H"""
     <span class={[@name, @class]} />
     """

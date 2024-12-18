@@ -15,7 +15,8 @@ defmodule Sonos.Device do
   alias __MODULE__
   require Logger
 
-  def replace_state(%Device{} = device, service, %Subscription{} = state) when is_binary(service) do
+  def replace_state(%Device{} = device, service, %Subscription{} = state)
+      when is_binary(service) do
     %Device{device | state: device.state |> Map.put(service, state)}
   end
 
@@ -64,6 +65,11 @@ defmodule Sonos.Device do
     device = device |> replace_state(service_key, device_state)
 
     {:ok, %Device{} = device}
+  end
+
+  def call(%Sonos.Device{} = device, service, function, inputs)
+      when is_atom(service) and is_atom(function) do
+    Module.concat([device.api, service]) |> apply(function, [device.endpoint | inputs])
   end
 
   def subscribe(%Sonos.Device{} = device, service, event_address, opts \\ [])

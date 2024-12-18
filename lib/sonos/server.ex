@@ -35,17 +35,17 @@ defmodule Sonos.Server do
   end
 
   def update_device_state(usn, service, vars) when is_binary(service) do
-    vars |> IO.inspect(label: "vars")
     vars =
       case service do
         # This one is special because it returns a big xml blob that has to be parsed specially, which
-        # in itself is not a problem, but updates are sent piecemeal as nested xml elements, which must be
-        # merged with the existing nested state.
+        # in itself is not a problem, but updates are sent piecemeal underneath an InstanceID element,
+        # which requires special merging logic.
         "RenderingControl:1" ->
           vars["LastChange"]
           |> XmlToMap.naive_map()
           |> Map.get("Event")
           |> Sonos.Utils.coerce_to_list()
+          # TODO FIXME I feel like most of this logic could be elsewhere, simplifying this greatly.
           |> Enum.map(fn %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
             # Map (instance_id -> state)
             data =
@@ -229,12 +229,12 @@ defmodule Sonos.Server do
     {:noreply, %State{} = state}
   end
 
-  def handle_cast({:remove_device, usn}, state) do
+  def handle_cast({:remove_device, usn}, %State{} = state) do
     state =
       state.devices[usn]
       |> then(fn
         nil ->
-          :ok
+          state
 
         %Device{} = device ->
           state |> State.remove_device(device)
@@ -245,6 +245,23 @@ defmodule Sonos.Server do
 
   def handle_call(:state, _from, state) do
     {:reply, state, %State{} = state}
+  end
+
+  def handle_call(:devices, _from, state) do
+    devices =
+      state.devices
+      |> Enum.map(fn {_usn, %Sonos.Device{} = device} ->
+        %Sonos.Device{
+          device
+          | usn:
+              device.usn
+              |> String.trim_leading("uuid:")
+              |> String.trim_trailing("::urn:schemas-upnp-org:device:ZonePlayer:1"),
+            state: nil
+        }
+      end)
+
+    {:reply, devices, %State{} = state}
   end
 
   def handle_call({:cache_fetch, endpoint, service, inputs, vars}, _from, %State{} = state)

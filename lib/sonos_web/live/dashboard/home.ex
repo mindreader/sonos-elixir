@@ -3,19 +3,8 @@ defmodule SonosWeb.Dashboard do
 
   @impl true
   def mount(_params, _session, socket) do
-    #    podcast = Podcasts.get_podcast!(podcast_id)
-    #    episodes = Episodes.list_episodes(podcast)
-
-    podcast = %{
-      title: "Podcast 1",
-      created_at: DateTime.utc_now(),
-      published_at: DateTime.utc_now()
-    }
-
-    IO.inspect(podcast, label: "podcast")
-
     socket
-    |> assign(:podcast, podcast)
+    |> assign(:action, :list_groups)
     |> then(fn socket -> {:ok, socket} end)
   end
 
