@@ -8,7 +8,7 @@ defmodule Sonos.Server.State do
             ssdp_server: nil
 
   def replace_device(%State{} = state, %Device{} = device) do
-    short_usn = device.usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    short_usn = device.usn |> Sonos.Api.short_usn()
 
     %State{
       state
@@ -20,7 +20,7 @@ defmodule Sonos.Server.State do
   def remove_device(%State{} = state, %Sonos.SSDP.Device{} = device) do
     endpoint = device |> Sonos.SSDP.Device.endpoint()
 
-    short_usn = device.usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    short_usn = device.usn |> Sonos.Api.short_usn()
 
     %State{
       state
@@ -30,7 +30,7 @@ defmodule Sonos.Server.State do
   end
 
   def remove_device(%State{} = state, %Device{} = device) do
-    short_usn = device.usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    short_usn = device.usn |> Sonos.Api.short_usn()
 
     %State{
       state

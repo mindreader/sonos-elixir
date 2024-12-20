@@ -94,7 +94,7 @@ defmodule Sonos.Server do
 
   def handle_cast({:update_device_state, usn, service, vars}, %State{} = state)
       when is_binary(service) do
-    short_usn = usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    short_usn = usn |> Sonos.Api.short_usn()
 
     devices =
       state.devices
@@ -163,7 +163,7 @@ defmodule Sonos.Server do
         {:reply, {:error, :unsubscribed_device}, %State{} = state}
 
       usn ->
-        short_usn = usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+        short_usn = usn |> Sonos.Api.short_usn()
 
         state.devices[short_usn]
         |> then(fn
@@ -171,8 +171,7 @@ defmodule Sonos.Server do
             {:reply, {:error, :unsubscribed_device}, %State{} = state}
 
           %Sonos.Device{} = device ->
-            service_key =
-              service.service_type() |> String.replace("urn:schemas-upnp-org:service:", "")
+            service_key = service.short_service_type()
 
             device.state[service_key]
             |> then(fn
@@ -225,7 +224,7 @@ defmodule Sonos.Server do
         %State{} = state
       ) do
     Logger.info("subscribed to #{service_key} with sid #{sid} and max_age #{max_age}")
-    usn = usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    usn = usn |> Sonos.Api.short_usn()
 
     state = %State{
       state
@@ -244,7 +243,7 @@ defmodule Sonos.Server do
         %State{} = state
       ) do
     Logger.info("resubscribed to #{service_key} on #{usn}")
-    usn = usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    usn = usn |> Sonos.Api.short_usn()
 
     state = %State{
       state
@@ -259,7 +258,7 @@ defmodule Sonos.Server do
   end
 
   def handle_info({_ref, {:identified, {:ok, %Device{} = device}}}, %State{} = state) do
-    short_usn = device.usn |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+    short_usn = device.usn |> Sonos.Api.short_usn()
     state = update_in(state.devices, &Map.put(&1, short_usn, device))
     state = update_in(state.usn_by_endpoint, &Map.put(&1, device.endpoint, short_usn))
 

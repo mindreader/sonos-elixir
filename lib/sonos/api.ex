@@ -34,6 +34,11 @@ defmodule Sonos.Api do
   model of device differs.
   """
 
+  def short_usn(usn) do
+    usn
+    |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
+  end
+
   defmodule Play1 do
     @moduledoc """
     API module for Sonos Play:1 speakers.

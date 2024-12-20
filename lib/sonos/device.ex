@@ -53,9 +53,7 @@ defmodule Sonos.Device do
   def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ []) do
     timeout = opts[:timeout] || 60 * 5
 
-    service_key =
-      service.service_type()
-      |> String.replace("urn:schemas-upnp-org:service:", "")
+    service_key = service.short_service_type()
 
     Task.Supervisor.async(Sonos.Tasks, fn ->
       {:subscribed, device.usn, service_key, subscribe(device, service, event_address, opts)}
@@ -94,9 +92,7 @@ defmodule Sonos.Device do
   end
 
   def resubscribe_task(%Sonos.Device{} = device, service) when is_atom(service) do
-    service_key =
-      service.service_type()
-      |> String.replace("urn:schemas-upnp-org:service:", "")
+    service_key = service.short_service_type()
 
     device.state[service_key]
     |> then(fn
