@@ -60,6 +60,8 @@ defmodule Sonos.Device.Subscription do
   end
 
   def var_replacements(%Subscription{} = state, service, inputs, missing_vars) do
+    # FIXME all these replacements can be inferred from the service docs, including the
+    # presence of an instance id in the inputs of the request lets us know to provide it.
     case service.service_type() do
       "urn:schemas-upnp-org:service:RenderingControl:1" ->
         alternative_vars = %{

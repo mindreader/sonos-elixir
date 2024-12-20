@@ -44,6 +44,7 @@ defmodule Sonos.SSDP do
     state = %State{
       socket: port(),
       devices: %{}
+      # TODO periodic run so that we can detect time drift and run a rescan and a cache clear
     }
 
     {:ok, state, {:continue, :startup}}
@@ -208,7 +209,8 @@ defmodule Sonos.SSDP do
 
           {:update, nil} ->
             with {:ok, %SSDP.Device{} = device} <- SSDP.Device.from_headers(msg, ip) do
-              Logger.info("Noticed new device #{inspect(usn)} on network (#{device.server})")
+
+              # Logger.debug("Noticed new device #{inspect(usn)} on network (#{device.server})")
 
               state.subscribers
               |> Enum.each(fn {pid, subscriber} ->

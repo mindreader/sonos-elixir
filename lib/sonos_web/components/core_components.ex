@@ -527,9 +527,10 @@ defmodule SonosWeb.CoreComponents do
   attr(:id, :string, required: true)
   attr(:target, :any, required: true)
   attr(:name, :string, required: true)
-  attr(:playing, :boolean, default: false)
-  attr(:shuffle, :boolean, default: false)
-  attr(:continue, :boolean, default: false)
+  attr(:playing, :boolean, required: true)
+  attr(:shuffle, :boolean, required: true)
+  attr(:continue, :boolean, required: true)
+  attr(:volume, :integer, required: true)
 
   def player_group(assigns) do
     ~H"""
@@ -572,7 +573,7 @@ defmodule SonosWeb.CoreComponents do
           <.icon name="hero-arrow-path-mini" class=""/>
         </button>
 
-        <input type="range" name="volume" min="0" max="100" value="50" class="ml-2 w-full"/>
+        <input type="range" name="volume" min="0" max="100" value={@volume} class="ml-2 w-full"/>
 
       </div>
     </div>

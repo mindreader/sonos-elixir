@@ -78,6 +78,10 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :play, [0, "1"])
   end
 
+  def get_pause(%Sonos.Device{} = device) do
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_pause, [0])
+  end
+
   def pause(%Sonos.Device{} = device) do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :pause, [0])
   end
@@ -88,6 +92,10 @@ defmodule Sonos do
 
   def previous(%Sonos.Device{} = device) do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :previous, [0])
+  end
+
+  def get_group_volume(%Sonos.Device{} = device) do
+    device |> Sonos.Device.call(MediaRenderer.GroupRenderingControl, :get_group_volume, [0])
   end
 
   def server_state do

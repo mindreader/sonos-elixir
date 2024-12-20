@@ -3,15 +3,27 @@ defmodule Sonos.Api.Response do
   alias Sonos.Utils
   defstruct command: nil, outputs: nil, via: nil
 
-  def new(command, output, opts \\ []) do
+  def new(command, output, output_types, opts \\ []) do
     via = opts |> Keyword.get(:via, nil)
+
+    output_types = output_types |> Enum.map(fn x -> {x.name, x.data_type} end) |> Map.new()
 
     output =
       output
       |> Enum.map(fn {name, val} ->
-        case name do
-          :zone_group_state ->
+        output_type = output_types |> Map.get(name, nil)
+
+        case {name, output_type} do
+          {:zone_group_state, :string} ->
             {name, val |> zone_group_state_parse()}
+          {:preset_name_list, :string} ->
+            {name, val |> String.split(",")}
+
+          {_, :boolean} ->
+            {name, val["-val"] == "1"}
+
+         # {_, x} when x in [:ui1, :ui2, :ui4, :i1, :i2, :i4] ->
+         #   {name, val["-val"]}
 
           _ ->
             {name, val}
@@ -55,4 +67,78 @@ defmodule Sonos.Api.Response do
       end)
     end)
   end
+
+#        "RenderingControl:1" ->
+#              |> Enum.reduce(%{}, fn {key, val}, acc ->
+#                val =
+#                  case key do
+#                    # values by channel (LF, RF, Master), as boolean
+#                    "Mute" ->
+#                      val
+#                      |> Sonos.Utils.coerce_to_list()
+#                      |> Enum.map(fn val ->
+#                        {val["-channel"], val["-val"] == "1"}
+#                      end)
+#                      |> Map.new()
+#
+#                    # values by channel (LF, RF, Master), as integers
+#                    x when x in ["Loudness", "Volume"] ->
+#                      val
+#                      |> Sonos.Utils.coerce_to_list()
+#                      |> Enum.map(fn val ->
+#                        {val["-channel"], val["-val"] |> String.to_integer()}
+#                      end)
+#                      |> Map.new()
+#
+#                    # integer values
+#                    x
+#                    when x in [
+#                           "AudioDelay",
+#                           "AudioDelayLeftRear",
+#                           "AudioDelayRightRear",
+#                           "Bass",
+#                           "Treble",
+#                           "SubEnabled",
+#                           "SubGain",
+#                           "SubPolarity",
+#                           "SurroundLevel",
+#                           "DialogLevel",
+#                           "HeightChannelLevel",
+#                           "MusicSurroundLevel",
+#                           "SpeechEnhanceEnabled",
+#                           "OutputFixed",
+#                           "SpeakerSize",
+#                           "SubCrossover",
+#                           "SurroundMode"
+#                         ] ->
+#                      val["-val"] |> String.to_integer()
+#
+#                    # boolean values (represented as strings of "0" or "1")
+#                    x
+#                    when x in [
+#                           "SurroundEnabled",
+#                           "SonarCalibrationAvailable",
+#                           "SonarEnabled",
+#                           "NightMode"
+#                         ] ->
+#                      val["-val"]
+#                      |> then(fn
+#                        "0" -> false
+#                        "1" -> true
+#                        _ -> nil
+#                      end)
+#
+#                    # comma separated list of strings
+#                    "PresetNameList" ->
+#                      val["-val"] |> String.split(",")
+#                  end
+#
+#                acc |> Map.put(key, val)
+#              end)
+#
+#            {instance_id |> String.to_integer(), data}
+#          end)
+#          |> Map.new()
+
+
 end

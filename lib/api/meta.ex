@@ -375,6 +375,10 @@ defmodule Sonos.Api.Meta do
             def service_type do
               unquote(service_type)
             end
+
+            def short_service_type do
+              service_type() |> String.replace("urn:schemas-upnp-org:service:", "")
+            end
           end
         end
       end)
@@ -444,7 +448,7 @@ defmodule Sonos.Api.Meta do
         unquote(cache_fetch)
         |> then(fn
           {via, {:ok, resp}} ->
-            {:ok, Sonos.Api.Response.new(unquote(action.name), resp.outputs, via: via)}
+            {:ok, Sonos.Api.Response.new(unquote(action.name), resp.outputs, unquote(action.outputs |> Macro.escape()), via: via)}
 
           {_via, err} ->
             err

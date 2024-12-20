@@ -36,117 +36,21 @@ defmodule Sonos.Server do
 
   def update_device_state(usn, service, vars) when is_binary(service) do
     vars =
-      case service do
-        # This one is special because it returns a big xml blob that has to be parsed specially, which
-        # in itself is not a problem, but updates are sent piecemeal underneath an InstanceID element,
-        # which requires special merging logic.
-        "RenderingControl:1" ->
-          vars["LastChange"]
+
+      # LastChange is a special element that allows you to piecemeal update variables rather than
+      # replacing them all. But it is always under an InstanceID for some reason, which I've never
+      # seen be anything other than 0, nonetheless we should endeavour to preserve that as the
+      # instance id is used in various function calls.
+      case vars["LastChange"] do
+        last_change when is_binary(last_change) ->
+          last_change
           |> XmlToMap.naive_map()
           |> Map.get("Event")
           |> Sonos.Utils.coerce_to_list()
-          # TODO FIXME I feel like most of this logic could be elsewhere, simplifying this greatly.
           |> Enum.map(fn %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
-            # Map (instance_id -> state)
-            data =
-              [
-                {"Loudness", data["Loudness"]},
-                {"Volume", data["Volume"]},
-                {"Mute", data["Mute"]},
-                {"AudioDelay", data["AudioDelay"]},
-                {"AudioDelayLeftRear", data["AudioDelayLeftRear"]},
-                {"AudioDelayRightRear", data["AudioDelayRightRear"]},
-                {"Bass", data["Bass"]},
-                {"Treble", data["Treble"]},
-                {"SubEnabled", data["SubEnabled"]},
-                {"SubGain", data["SubGain"]},
-                {"SubPolarity", data["SubPolarity"]},
-                {"SurroundLevel", data["SurroundLevel"]},
-                {"DialogLevel", data["DialogLevel"]},
-                {"HeightChannelLevel", data["HeightChannelLevel"]},
-                {"MusicSurroundLevel", data["MusicSurroundLevel"]},
-                {"SpeechEnhanceEnabled", data["SpeechEnhanceEnabled"]},
-                {"OutputFixed", data["OutputFixed"]},
-                {"SpeakerSize", data["SpeakerSize"]},
-                {"SubCrossover", data["SubCrossover"]},
-                {"SurroundMode", data["SurroundMode"]},
-                {"SurroundEnabled", data["SurroundEnabled"]},
-                {"SonarCalibrationAvailable", data["SonarCalibrationAvailable"]},
-                {"SonarEnabled", data["SonarEnabled"]},
-                {"NightMode", data["NightMode"]},
-                {"PresetNameList", data["PresetNameList"]}
-              ]
-              |> Enum.filter(fn {_, val} -> val end)
-              |> Enum.reduce(%{}, fn {key, val}, acc ->
-                val =
-                  case key do
-                    # values by channel (LF, RF, Master), as boolean
-                    "Mute" ->
-                      val
-                      |> Sonos.Utils.coerce_to_list()
-                      |> Enum.map(fn val ->
-                        {val["-channel"], val["-val"] == "1"}
-                      end)
-                      |> Map.new()
-
-                    # values by channel (LF, RF, Master), as integers
-                    x when x in ["Loudness", "Volume"] ->
-                      val
-                      |> Sonos.Utils.coerce_to_list()
-                      |> Enum.map(fn val ->
-                        {val["-channel"], val["-val"] |> String.to_integer()}
-                      end)
-                      |> Map.new()
-
-                    # integer values
-                    x
-                    when x in [
-                           "AudioDelay",
-                           "AudioDelayLeftRear",
-                           "AudioDelayRightRear",
-                           "Bass",
-                           "Treble",
-                           "SubEnabled",
-                           "SubGain",
-                           "SubPolarity",
-                           "SurroundLevel",
-                           "DialogLevel",
-                           "HeightChannelLevel",
-                           "MusicSurroundLevel",
-                           "SpeechEnhanceEnabled",
-                           "OutputFixed",
-                           "SpeakerSize",
-                           "SubCrossover",
-                           "SurroundMode"
-                         ] ->
-                      val["-val"] |> String.to_integer()
-
-                    # boolean values (represented as strings of "0" or "1")
-                    x
-                    when x in [
-                           "SurroundEnabled",
-                           "SonarCalibrationAvailable",
-                           "SonarEnabled",
-                           "NightMode"
-                         ] ->
-                      val["-val"]
-                      |> then(fn
-                        "0" -> false
-                        "1" -> true
-                        _ -> nil
-                      end)
-
-                    # comma separated list of strings
-                    "PresetNameList" ->
-                      val["-val"] |> String.split(",")
-                  end
-
-                acc |> Map.put(key, val)
-              end)
-
             {instance_id |> String.to_integer(), data}
-          end)
-          |> Map.new()
+         end)
+         |> Map.new()
 
         # most if not all other types of services are just simple key-value pairs, so we can just
         # merge them with the existing state variable by variable. All states I have seen send the
@@ -212,6 +116,8 @@ defmodule Sonos.Server do
       |> Map.replace_lazy(short_usn, fn %Device{} = device ->
         %Device{} = device |> Device.merge_state(service, vars)
       end)
+
+    Phoenix.PubSub.broadcast(Sonos.PubSub, service, {:updated, service})
 
     state = %State{state | devices: devices}
 

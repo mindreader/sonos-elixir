@@ -3,6 +3,7 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
 
   use SonosWeb, :live_component
 
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -15,21 +16,25 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
          playing={group.playing}
          shuffle={group.shuffle}
          continue={group.continue}
+         volume={group.volume}
        />
      </div>
     </div>
     """
   end
 
-  @impl true
-  def mount(socket) do
-    groups =
+
+  def get_groups() do
       Sonos.groups()
       |> Enum.map(fn group ->
         member_count = group.members |> Enum.count()
 
-        name = group.members |> hd |> Map.get(:device) |> Map.get(:room_name)
+        leader = group.members |> hd |> Map.get(:device)
+        volume = leader |> Sonos.get_group_volume()
+        |> then(fn {:ok, %Sonos.Api.Response{} = resp} -> resp.outputs[:current_volume] end)
 
+
+        name = leader.room_name
         name =
           if member_count > 1 do
             "#{name} + #{member_count - 1}"
@@ -44,10 +49,21 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
            members: group.members,
            shuffle: false,
            playing: false,
-           continue: false
+           continue: false,
+           volume: volume |> IO.inspect(label: "volume")
          }}
       end)
       |> Map.new()
+
+
+  end
+
+  @impl true
+  def mount(socket) do
+    Phoenix.PubSub.subscribe(Sonos.PubSub, "RenderingControl:1")
+    Phoenix.PubSub.subscribe(Sonos.PubSub, "GroupRenderingControl:1")
+
+    groups = get_groups()
 
     socket
     |> assign(:groups, groups)
@@ -55,8 +71,18 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
   end
 
   @impl true
-  def update(_assigns, socket) do
-    {:ok, socket}
+  def update(assigns, socket) do
+    case assigns[:service] do
+      nil -> :ok
+      "RenderingControl:1" ->
+        Logger.info("got rendering control update")
+      "GroupRenderingControl:1" ->
+        Logger.info("got group rendering control update")
+    end
+
+    groups = get_groups()
+    socket |> assign(:groups, groups)
+    |> then(fn socket -> {:ok, socket} end)
   end
 
   @impl true
@@ -171,6 +197,11 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
         |> put_in([group_id, :continue], not continue)
       )
 
+    {:noreply, socket}
+  end
+
+  def handle_info(:updated, params, socket) do
+    {params, socket} |> IO.inspect(label: "params")
     {:noreply, socket}
   end
 end

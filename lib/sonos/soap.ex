@@ -118,7 +118,7 @@ defmodule Sonos.Soap do
 
   def request(%Control{} = req, endpoint, _opts) do
     url = "#{endpoint}#{req.control_url}"
-    action = "#{req.service_type}##{req.action}"
+    action = "#{req.service_type}##{req.action}" |> IO.inspect(label: "soap request")
 
     body =
       req.args
