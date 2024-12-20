@@ -48,7 +48,7 @@ defmodule Sonos.Server do
           |> Map.get("Event")
           |> Sonos.Utils.coerce_to_list()
           |> Enum.map(fn %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
-            {instance_id |> String.to_integer(), data}
+            {instance_id, data}
          end)
          |> Map.new()
 
@@ -85,27 +85,12 @@ defmodule Sonos.Server do
   """
   def cache_fetch(endpoint, service, inputs, outputs)
       when is_atom(service) and is_list(outputs) do
-    output_original_names = outputs |> Enum.map(fn x -> x.original_name end)
+
+    f = Sonos.Device.Subscription.fetch_vars(inputs, outputs)
 
     __MODULE__
-    |> GenServer.call({:cache_fetch, endpoint, service, inputs, output_original_names})
-    |> then(fn
-      {:ok, %{outputs: result}} ->
-        result =
-          outputs
-          |> Enum.map(fn x ->
-            result = result[to_string(x.original_name)]
-            result = Sonos.Utils.coerce_data_type(result, x.data_type)
-            {x.name, result}
-          end)
-          |> Map.new()
-
-        {:ok, %{outputs: result}}
-
-      err ->
-        err
-    end)
-  end
+    |> GenServer.call({:cache_fetch, endpoint, service, f})
+ end
 
   def handle_cast({:update_device_state, usn, service, vars}, %State{} = state)
       when is_binary(service) do
@@ -170,7 +155,7 @@ defmodule Sonos.Server do
     {:reply, devices, %State{} = state}
   end
 
-  def handle_call({:cache_fetch, endpoint, service, inputs, vars}, _from, %State{} = state)
+  def handle_call({:cache_fetch, endpoint, service, state_fetcher}, _from, %State{} = state)
       when is_atom(service) do
     state.usn_by_endpoint[endpoint]
     |> then(fn
@@ -205,39 +190,21 @@ defmodule Sonos.Server do
 
                 {:reply, {:error, :unsubscribed_event}, %State{} = state}
 
+
               %Device.Subscription{state: nil} ->
                 # We have subscribed to this event type, but haven't received an initial event yet.
                 {:reply, {:error, :unsubscribed_event}, %State{} = state}
 
-              %Device.Subscription{} = devstate ->
+              # TODO subscription is well past due, unset it and resubscribe from scratch.
+              %Device.Subscription{} = subscription ->
                 # user has shown interest in this data, keep it up to date.
-                if devstate |> Device.Subscription.expiring?() do
+                if subscription |> Device.Subscription.expiring?() do
                   device |> Device.resubscribe_task(service)
                 end
 
-                vars = vars |> Enum.map(&to_string/1)
+                res = subscription |> state_fetcher.()
 
-                res = devstate.state |> Map.take(vars)
-
-                if res |> Enum.count() < vars |> Enum.count() do
-                  missing_vars = vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
-
-                  case Sonos.Device.Subscription.var_replacements(
-                         devstate,
-                         service,
-                         inputs,
-                         missing_vars
-                       ) do
-                    {:ok, replacement_vars} ->
-                      res = res |> Map.merge(replacement_vars)
-                      {:reply, {:ok, %{outputs: res}}, %State{} = state}
-
-                    {:error, {:still_missing_vars, missing_vars}} ->
-                      {:reply, {:error, {:missing_vars, missing_vars}}, %State{} = state}
-                  end
-                else
-                  {:reply, {:ok, %{outputs: res}}, %State{} = state}
-                end
+                {:reply, {:ok, %{outputs: res}}, %State{} = state}
             end)
         end)
     end)

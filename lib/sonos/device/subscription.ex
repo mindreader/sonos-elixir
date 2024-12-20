@@ -59,73 +59,59 @@ defmodule Sonos.Device.Subscription do
     state.last_updated_at |> Timex.shift(seconds: half_max_age) |> Timex.before?(Timex.now())
   end
 
-  def var_replacements(%Subscription{} = state, service, inputs, missing_vars) do
-    # FIXME all these replacements can be inferred from the service docs, including the
-    # presence of an instance id in the inputs of the request lets us know to provide it.
-    case service.service_type() do
-      "urn:schemas-upnp-org:service:RenderingControl:1" ->
-        alternative_vars = %{
-          "CurrentVolume" => fn state ->
-            state[inputs[:InstanceID]]["Volume"]["#{inputs[:Channel]}"]
-          end,
-          "CurrentMute" => fn state ->
-            state[inputs[:InstanceID]]["Mute"]["#{inputs[:Channel]}"]
-          end,
-          "CurrentLoudness" => fn state ->
-            state[inputs[:InstanceID]]["Loudness"]["#{inputs[:Channel]}"]
-          end,
-          "CurrentValue" => fn state ->
-            state[inputs[:InstanceID]]["#{inputs[:EQType]}"]
+  @doc """
+  Fetches the state variables for a given service and inputs.
+
+  Where the variable is located within unparsed state varies based on service, so we try to look
+  at inputs that were passed to the function as well as the shape of the state at that point
+  and then work our way down to extract the right value for that variable.
+
+  Ideally we would do this parsing once before storing in subscription, but then we'd have to define
+  our own layout to follow and then do basically the same sort of logic, so we'd only be saving
+  a little memory and cpu time, not enough to be worth the effort at this time.
+  """
+  def fetch_vars(inputs, outputs) do
+    fn %Subscription{state: state} ->
+      outputs |> Enum.reduce(%{}, fn x, accum ->
+        main_value = state
+
+        # many commands are prefixed by instance id in their state. If we have input an instance id
+        # then use it to index into the state. Some commands take an instance id but their state
+        # is not under the instance id, so we check for both possibilities
+        instance_id = inputs |> Keyword.get(:InstanceID, :not_specified)
+
+        main_value = if instance_id != :not_specified do
+          case main_value |> Map.get(to_string(instance_id)) do
+            nil -> main_value
+            value -> value
           end
-        }
-
-        res =
-          missing_vars
-          |> Enum.reduce(%{}, fn var, accum ->
-            case alternative_vars |> Map.get(var) do
-              nil ->
-                accum
-
-              f ->
-                inputs |> IO.inspect(label: "inputs")
-                accum |> Map.put(var, f.(state.state))
-            end
-          end)
-
-        if res |> Enum.count() == missing_vars |> Enum.count() do
-          {:ok, res}
         else
-          still_missing_vars = missing_vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
-          {:error, {:still_missing_vars, still_missing_vars}}
+          main_value
         end
 
-      "urn:schemas-upnp-org:service:GroupRenderingControl:1" ->
-        alternative_vars = %{
-          "CurrentVolume" => "GroupVolume",
-          "CurrentMute" => "GroupMute"
-        }
+        main_value = main_value |> Map.get(x.state_variable |> to_string())
 
-        res =
-          missing_vars
-          |> Enum.reduce(%{}, fn var, accum ->
-            case alternative_vars[var] do
-              nil ->
-                accum
-
-              alternate ->
-                accum |> Map.put(var, state.state[alternate])
-            end
-          end)
-
-        if res |> Enum.count() == missing_vars |> Enum.count() do
-          {:ok, res}
+        # similar to instance id, if we passed in a channel to this command, use it to find the
+        # xml element that is specific to this channel.
+        main_value = if inputs |> Keyword.has_key?(:Channel) && is_list(main_value) do
+          main_value
+          |> Enum.find(fn v -> v["-channel"] == "#{inputs[:Channel]}" end)
         else
-          still_missing_vars = missing_vars |> Enum.reject(fn v -> res |> Map.has_key?(v) end)
-          {:error, {:still_missing_vars, still_missing_vars}}
+          main_value
         end
 
-      _ ->
-        {:error, {:still_missing_vars, missing_vars}}
+        # if the value is a map, then it is a complex type and often times
+        # we need to extract the value from it.
+        main_value = case main_value do
+          %{"-val" => val} -> val
+          _ -> main_value
+        end
+
+        # turn mostly strings to int or booleans as appropriate
+        main_value = Sonos.Utils.coerce_data_type(main_value, x.data_type)
+
+        accum |> Map.put(x.name, main_value)
+      end)
     end
   end
 end

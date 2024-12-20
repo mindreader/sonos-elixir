@@ -197,7 +197,8 @@ defmodule Sonos.Api.Meta do
                   %{
                     name: x["name"] |> lowercasef.(),
                     original_name: x["name"] |> String.to_atom(),
-                    data_type: x["state_variable"] |> String.to_atom() |> dtypef.()
+                    data_type: x["state_variable"] |> String.to_atom() |> dtypef.(),
+                    state_variable: x["state_variable"] |> String.to_atom()
                   }
                 end
 

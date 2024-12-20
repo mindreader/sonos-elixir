@@ -9,7 +9,6 @@ defmodule Sonos do
     Sonos.Server |> GenServer.call(:devices)
   end
 
-
   # TODO FIXME these utility functions that are specific to the web could be moved to the web, getting
   # their own modules to represent devices.
   @doc """
