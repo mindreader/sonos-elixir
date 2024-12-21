@@ -197,13 +197,21 @@ defmodule Sonos.Server do
               # TODO subscription is well past due, unset it and resubscribe from scratch.
               %Device.Subscription{} = subscription ->
                 # user has shown interest in this data, keep it up to date.
-                if subscription |> Device.Subscription.expiring?() do
-                  device |> Device.resubscribe_task(service)
+                if subscription |> Device.Subscription.expired?() do
+                  {:reply, {:error, :expired_subscription}, %State{} = state}
+                else
+                  state =
+                    if subscription |> Device.Subscription.expiring?() do
+                      {:ok, device} = device |> Device.resubscribe_task(service)
+                      state |> State.replace_device(device)
+                    else
+                      state
+                    end
+
+                  res = subscription |> state_fetcher.()
+
+                  {:reply, {:ok, %{outputs: res}}, %State{} = state}
                 end
-
-                res = subscription |> state_fetcher.()
-
-                {:reply, {:ok, %{outputs: res}}, %State{} = state}
             end)
         end)
     end)
@@ -239,20 +247,34 @@ defmodule Sonos.Server do
   end
 
   def handle_info(
-        {_ref, {:resubscribed, usn, service_key, {:ok, %DateTime{} = dt}}},
+        {_ref, {:resubscribed, usn, service_key, res}},
         %State{} = state
       ) do
-    Logger.info("resubscribed to #{service_key} on #{usn}")
-    usn = usn |> Sonos.Api.short_usn()
+    state = case res do
+      {:error, {:unable_to_resubscribe, res}} ->
+        # this can happen if we waited too long, not a huge deal but we should try to minimize
+        # this if possible. It could also happen if the device rebooted and lost our subscription.
+        Logger.warning("unable to resubscribe to #{service_key} on #{usn}: #{res}")
 
-    state = %State{
-      state
-      | devices:
-          state.devices
-          |> Map.replace_lazy(usn, fn device ->
-            device |> Device.rebuscribed(service_key, dt)
-          end)
-    }
+        %State { state | devices: state.devices |> Map.replace_lazy(usn,
+          fn device -> device |> Device.resubscribe_failed(service_key) end
+        )
+      }
+
+      {:ok, %DateTime{} = dt} ->
+        usn = usn |> Sonos.Api.short_usn()
+
+        Logger.info("resubscribed to #{service_key} on #{usn}")
+
+        %State{
+          state
+          | devices:
+              state.devices
+              |> Map.replace_lazy(usn, fn device ->
+                device |> Device.rebuscribed(service_key, dt)
+              end)
+        }
+    end
 
     {:noreply, %State{} = state}
   end

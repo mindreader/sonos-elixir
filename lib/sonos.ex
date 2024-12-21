@@ -1,5 +1,10 @@
 require Logger
 
+# TODO
+# Sonos.Api.Play1.MediaRenderer.AVTransport.get_position_info(device.endpoint, 0)
+#  gives track: 3, track_duration: 216, track_metadata: big bunch of xml.
+# get_media_info returns (some stuff)
+
 defmodule Sonos do
   def scan do
     Sonos.SSDP.scan()
@@ -77,8 +82,11 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :play, [0, "1"])
   end
 
-  def get_pause(%Sonos.Device{} = device) do
-    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_pause, [0])
+  def is_playing?(%Sonos.Device{} = device) do
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_transport_info, [0])
+    |> then(fn {:ok, %Sonos.Api.Response{outputs: outputs}} ->
+      outputs[:current_transport_state] == "PLAYING"
+    end)
   end
 
   def pause(%Sonos.Device{} = device) do
@@ -93,8 +101,47 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :previous, [0])
   end
 
+  def shuffle_enabled?(play_state) when is_atom(play_state) do
+    play_state in [:shuffle, :shuffle_norepeat, :shuffle_repeat_one]
+  end
+
+  def continue_enabled?(play_state) when is_atom(play_state) do
+    play_state in [:repeat_all, :repeat_one, :shuffle_repeat_one, :shuffle]
+  end
+
+  def set_play_state(%Sonos.Device{} = device, state) do
+    state = case state do
+      :normal -> "NORMAL"
+      :repeat_one -> "REPEAT_ONE"
+      :repeat_all -> "REPEAT_ALL"
+      :shuffle -> "SHUFFLE"
+      :shuffle_norepeat -> "SHUFFLE_NOREPEAT"
+      :shuffle_repeat_one -> "SHUFFLE_REPEAT_ONE"
+    end
+
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :set_play_mode, [0, state])
+  end
+
+  def get_play_state(%Sonos.Device{} = device) do
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_transport_settings, [0])
+    |> then(fn {:ok, %Sonos.Api.Response{outputs: outputs}} ->
+      case outputs[:play_mode] do
+        "NORMAL" -> :normal
+        "REPEAT_ONE" -> :repeat_one
+        "REPEAT_ALL" -> :repeat_all
+        "SHUFFLE" -> :shuffle
+        "SHUFFLE_NOREPEAT" -> :shuffle_norepeat
+        "SHUFFLE_REPEAT_ONE" -> :shuffle_repeat_one
+      end
+    end)
+  end
+
   def get_group_volume(%Sonos.Device{} = device) do
     device |> Sonos.Device.call(MediaRenderer.GroupRenderingControl, :get_group_volume, [0])
+  end
+
+  def set_group_volume(%Sonos.Device{} = device, volume) when is_integer(volume) and volume >= 0 and volume <= 100 do
+    device |> Sonos.Device.call(MediaRenderer.GroupRenderingControl, :set_group_volume, [0, volume])
   end
 
   def server_state do

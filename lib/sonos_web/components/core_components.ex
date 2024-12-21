@@ -535,47 +535,57 @@ defmodule SonosWeb.CoreComponents do
   def player_group(assigns) do
     ~H"""
     <div id={@id} class="bg-slate-500 text-white m-2 p-2 rounded-lg">
-      <div class="mx-2">
-        <%= @name %>
-      </div>
+      <form phx-change="volume" phx-target={@target}>
+        <div class="mx-2">
+          <%= @name %>
+        </div>
 
-      <div class="flex flex-nowrap gap-2 mx-2">
-        <button
-          phx-click="shuffle"
-          phx-target={@target}
-          value={@id}
-          class={["my-auto rounded-full", @shuffle && "text-slate-500 bg-white"]}
-        >
-          <.icon name="icon-shuffle" />
-        </button>
+        <div class="flex flex-nowrap gap-2 mx-2">
+          <button
+            phx-click="shuffle"
+            phx-target={@target}
+            value={@id}
+            class={["my-auto rounded-full", @shuffle && "text-slate-500 bg-white"]}
+          >
+            <.icon name="icon-shuffle" />
+          </button>
 
-        <button phx-click="previous" phx-target={@target} value={@id}>
-          <.icon name="hero-backward"/>
-        </button>
+          <button phx-click="previous" phx-target={@target} value={@id}>
+            <.icon name="hero-backward"/>
+          </button>
 
-        <button :if={!@playing} phx-click="play" phx-target={@target} value={@id}>
-          <.icon name="hero-play-solid" class="size-10" />
-        </button>
-        <button :if={@playing} phx-click="pause" phx-target={@target} value={@id}>
-          <.icon name="hero-pause-solid" class="size-10" />
-        </button>
+          <button :if={!@playing} phx-click="play" phx-target={@target} value={@id}>
+            <.icon name="hero-play-solid" class="size-10" />
+          </button>
+          <button :if={@playing} phx-click="pause" phx-target={@target} value={@id}>
+            <.icon name="hero-pause-solid" class="size-10" />
+          </button>
 
-        <button phx-click="next" phx-target={@target} value={@id}>
-          <.icon name="hero-forward" />
-        </button>
+          <button phx-click="next" phx-target={@target} value={@id}>
+            <.icon name="hero-forward" />
+          </button>
 
-        <button
-          phx-click="continue"
-          phx-target={@target}
-          value={@id}
-          class={["my-auto rounded-full", @continue && "text-slate-500 bg-white"] }
-        >
-          <.icon name="hero-arrow-path-mini" class=""/>
-        </button>
+          <button
+            phx-click="continue"
+            phx-target={@target}
+            value={@id}
+            class={["my-auto rounded-full", @continue && "text-slate-500 bg-white"] }
+          >
+            <.icon name="hero-arrow-path-mini" class=""/>
+          </button>
 
-        <input type="range" name="volume" min="0" max="100" value={@volume} class="ml-2 w-full"/>
+          <input type="hidden" name="value" value={@id} />
+          <input
+            type="range"
+            name="volume"
+            min="0"
+            max="100"
+            value={@volume}
+            class="ml-2 w-full"
+          />
+        </div>
+      </form>
 
-      </div>
     </div>
     """
   end

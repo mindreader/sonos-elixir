@@ -3,6 +3,16 @@ defmodule SonosWeb.Dashboard do
   alias __MODULE__
 
   @impl true
+  def render(assigns) do
+    ~H"""
+    <.live_component :if={@action == :list_groups}
+      id="group-list"
+      module={SonosWeb.Dashboard.GroupListComponent}
+    />
+    """
+  end
+
+  @impl true
   def mount(_params, _session, socket) do
     socket
     |> assign(:action, :list_groups)

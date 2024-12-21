@@ -20,26 +20,6 @@ defmodule Sonos.Device do
     %Device{device | state: device.state |> Map.put(service, state)}
   end
 
-  def subscribed(%Device{} = device, service, sid, max_age) when is_binary(service) do
-    device_state =
-      device.state
-      |> Map.replace_lazy(service, fn %Subscription{} = state ->
-        %Subscription{state | subscription_id: sid, max_age: max_age}
-      end)
-
-    %Device{device | state: device_state}
-  end
-
-  def rebuscribed(%Device{} = device, service, %DateTime{} = dt) when is_binary(service) do
-    device_state =
-      device.state
-      |> Map.replace_lazy(service, fn %Subscription{} = state ->
-        %Subscription{} = state |> Subscription.resubscribed(dt)
-      end)
-
-    %Device{device | state: device_state}
-  end
-
   def merge_state(%Device{} = device, service, vars) when is_binary(service) do
     device_state =
       device.state
@@ -50,7 +30,7 @@ defmodule Sonos.Device do
     %Device{device | state: device_state}
   end
 
-  def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ []) do
+  def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ []) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) do
     timeout = opts[:timeout] || 60 * 5
 
     service_key = service.short_service_type()
@@ -74,7 +54,7 @@ defmodule Sonos.Device do
       when is_atom(service) do
     timeout = opts[:timeout] || 60 * 5
 
-    Logger.info("subscribing to #{service.service_type()} on #{device.usn}")
+    Logger.info("subscribing to #{service.short_service_type()} on #{device.usn |> Sonos.Api.short_usn()}")
 
     event_endpoint = "#{event_address}/#{device.usn}/#{service.service_type()}"
 
@@ -89,6 +69,16 @@ defmodule Sonos.Device do
       err ->
         err
     end)
+  end
+
+  def subscribed(%Device{} = device, service, sid, max_age) when is_binary(service) do
+    device_state =
+      device.state
+      |> Map.replace_lazy(service, fn %Subscription{} = state ->
+        %Subscription{state | subscription_id: sid, max_age: max_age}
+      end)
+
+    %Device{device | state: device_state}
   end
 
   def resubscribe_task(%Sonos.Device{} = device, service) when is_atom(service) do
@@ -108,17 +98,43 @@ defmodule Sonos.Device do
         Task.Supervisor.async(Sonos.Tasks, fn ->
           {:resubscribed, device.usn, service_key, resubscribe(device, service, state)}
         end)
+
+        device_state = state |> Subscription.resubscribe_sent(Timex.now())
+        device = device |> replace_state(service_key, device_state)
+        {:ok, %Device{} = device}
     end)
   end
 
   def resubscribe(%Sonos.Device{} = device, service, %Subscription{} = state) do
-    service
-    |> apply(:resubscribe, [device.endpoint, state.subscription_id, [timeout: state.timeout]])
-    |> then(fn
-      {:ok, %HTTPoison.Response{status_code: 200}} ->
-        {:ok, Timex.now()}
-    end)
+    if state.resubscribe_last_sent_at &&
+         state.resubscribe_last_sent_at
+         |> Timex.after?(Timex.now() |> Timex.shift(seconds: -10)) do
+      {:ok, state.resubscribe_last_sent_at}
+    else
+      service
+      |> apply(:resubscribe, [device.endpoint, state.subscription_id, [timeout: state.timeout]])
+      |> then(fn
+        {:ok, %HTTPoison.Response{status_code: 200}} ->
+          {:ok, Timex.now()}
+      end)
+    end
   end
+
+  def rebuscribed(%Device{} = device, service, %DateTime{} = dt) when is_binary(service) do
+    device_state =
+      device.state
+      |> Map.replace_lazy(service, fn %Subscription{} = state ->
+        %Subscription{} = state |> Subscription.resubscribed(dt)
+      end)
+
+    %Device{device | state: device_state}
+  end
+
+  def resubscribe_failed(%Device{} = device, service) when is_binary(service) do
+    device_state = device.state |> Map.delete(service)
+    %Device{device | state: device_state}
+  end
+
 
   def identify_task(%Sonos.SSDP.Device{} = dev, opts \\ []) do
     Task.Supervisor.async(Sonos.Tasks, fn ->

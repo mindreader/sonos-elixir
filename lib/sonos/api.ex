@@ -20,10 +20,10 @@ defmodule Sonos.Api do
   alias Sonos.Api.Play1.MediaRenderer.{AVTransport, RenderingControl, GroupRenderingControl}
 
   # Playback control
-  AVTransport.play(instance_id, speed)
+  AVTransport.play(device.endpoint, 0, "1")
 
   # Volume control
-  GroupRenderingControl.set_group_volume(device, 50)
+  GroupRenderingControl.set_group_volume(device.endpoint, 50)
   ```
 
   Each device's API is organized into services that provide specific functionality:

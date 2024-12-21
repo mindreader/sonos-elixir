@@ -1,6 +1,11 @@
 defmodule Sonos.Device.Subscription do
   alias __MODULE__
-  defstruct state: nil, subscription_id: nil, timeout: nil, max_age: nil, last_updated_at: nil
+  defstruct state: nil,
+            subscription_id: nil,
+            timeout: nil,
+            max_age: nil,
+            last_updated_at: nil,
+            resubscribe_last_sent_at: nil
 
   def new(opts \\ []) do
     timeout = opts[:timeout] || 60 * 5
@@ -20,7 +25,8 @@ defmodule Sonos.Device.Subscription do
       subscription_id: nil,
 
       # this is the last time we saw a message from them for this device.
-      last_updated_at: Timex.now()
+      last_updated_at: Timex.now(),
+      resubscribe_last_sent_at: nil
     }
   end
 
@@ -50,8 +56,16 @@ defmodule Sonos.Device.Subscription do
     %Subscription{state | state: substate, last_updated_at: Timex.now()}
   end
 
+  def resubscribe_sent(%Subscription{} = state, %DateTime{} = dt) do
+    %Subscription{state | resubscribe_last_sent_at: dt}
+  end
+
   def resubscribed(%Subscription{} = state, %DateTime{} = dt) do
     %Subscription{state | last_updated_at: dt}
+  end
+
+  def expired?(%Subscription{} = state) do
+    state.last_updated_at |> Timex.shift(seconds: state.max_age) |> Timex.before?(Timex.now())
   end
 
   def expiring?(%Subscription{} = state) do
