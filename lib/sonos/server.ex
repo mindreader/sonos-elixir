@@ -63,8 +63,9 @@ defmodule Sonos.Server do
     __MODULE__ |> GenServer.cast({:update_device_state, usn, service, vars})
   end
 
+  # TODO FIXME this needs to be a cast!
   def cache_service(endpoint, service) when is_atom(service) do
-    __MODULE__ |> GenServer.call({:cache_fetch, endpoint, service, [], []})
+    __MODULE__ |> GenServer.cast({:cache_service, endpoint, service})
     :ok
   end
 
@@ -134,6 +135,14 @@ defmodule Sonos.Server do
     {:noreply, %State{} = state}
   end
 
+  def handle_cast({:cache_service, endpoint, service}, %State{} = state) do
+    # We don't care about actually fetching anything, but we need to do basically
+    # the exact same as it would be in the cache fetch version, but with a guaranteed no output.
+    # TODO we could just factor out the logic into a separate function and have both call it.
+    {:reply, _, state} = handle_call({:cache_fetch, endpoint, service, &Function.identity/1}, nil, state)
+    {:noreply, %State{} = state}
+  end
+
   def handle_call(:state, _from, state) do
     {:reply, state, %State{} = state}
   end
@@ -191,15 +200,27 @@ defmodule Sonos.Server do
 
 
               %Device.Subscription{state: nil} ->
-                # We have subscribed to this event type, but haven't received an initial event yet.
+                # We have already subscribed to this event type, but haven't received an initial event yet.
                 {:reply, {:error, :unsubscribed_event}, %State{} = state}
 
               # TODO subscription is well past due, unset it and resubscribe from scratch.
               %Device.Subscription{} = subscription ->
                 # user has shown interest in this data, keep it up to date.
                 if subscription |> Device.Subscription.expired?() do
+
+                  # we have device state but it is so old it could be stale, so we need to
+                  # resubscribe from scratch.
+                  {:ok, device} = device |> Device.subscribe_task(
+                    service,
+                    state.our_event_address,
+                    timeout: @default_subscribe_timeout
+                  )
+                  state = state |> State.replace_device(device)
                   {:reply, {:error, :expired_subscription}, %State{} = state}
                 else
+
+                  # we have the state, but it is going to expire at some point, so we should
+                  # resubscribe to keep it up to date for awhile longer.
                   state =
                     if subscription |> Device.Subscription.expiring?() do
                       {:ok, device} = device |> Device.resubscribe_task(service)
@@ -254,7 +275,7 @@ defmodule Sonos.Server do
       {:error, {:unable_to_resubscribe, res}} ->
         # this can happen if we waited too long, not a huge deal but we should try to minimize
         # this if possible. It could also happen if the device rebooted and lost our subscription.
-        Logger.warning("unable to resubscribe to #{service_key} on #{usn}: #{res}")
+        Logger.warning("unable to resubscribe to #{service_key} on #{usn}: #{inspect(res)}")
 
         %State { state | devices: state.devices |> Map.replace_lazy(usn,
           fn device -> device |> Device.resubscribe_failed(service_key) end

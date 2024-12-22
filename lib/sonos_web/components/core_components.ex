@@ -535,13 +535,13 @@ defmodule SonosWeb.CoreComponents do
   def player_group(assigns) do
     ~H"""
     <div id={@id} class="bg-slate-500 text-white m-2 p-2 rounded-lg">
-      <form phx-change="volume" phx-target={@target}>
         <div class="mx-2">
           <%= @name %>
         </div>
 
         <div class="flex flex-nowrap gap-2 mx-2">
           <button
+            type="button"
             phx-click="shuffle"
             phx-target={@target}
             value={@id}
@@ -550,22 +550,24 @@ defmodule SonosWeb.CoreComponents do
             <.icon name="icon-shuffle" />
           </button>
 
-          <button phx-click="previous" phx-target={@target} value={@id}>
+          <button type="button" phx-click="previous" phx-target={@target} value={@id}>
             <.icon name="hero-backward"/>
           </button>
 
-          <button :if={!@playing} phx-click="play" phx-target={@target} value={@id}>
+          <button :if={!@playing} type="button" phx-click="play" phx-target={@target} value={@id}>
             <.icon name="hero-play-solid" class="size-10" />
           </button>
-          <button :if={@playing} phx-click="pause" phx-target={@target} value={@id}>
+
+          <button :if={@playing} type="button" phx-click="pause" phx-target={@target} value={@id}>
             <.icon name="hero-pause-solid" class="size-10" />
           </button>
 
-          <button phx-click="next" phx-target={@target} value={@id}>
+          <button type="button" phx-click="next" phx-target={@target} value={@id}>
             <.icon name="hero-forward" />
           </button>
 
           <button
+            type="button"
             phx-click="continue"
             phx-target={@target}
             value={@id}
@@ -574,17 +576,18 @@ defmodule SonosWeb.CoreComponents do
             <.icon name="hero-arrow-path-mini" class=""/>
           </button>
 
-          <input type="hidden" name="value" value={@id} />
-          <input
-            type="range"
-            name="volume"
-            min="0"
-            max="100"
-            value={@volume}
-            class="ml-2 w-full"
+          <form phx-target={@target}>
+            <input
+              type="range"
+              name="volume"
+              min="0"
+              max="100"
+              value={@volume}
+              class="ml-2 w-full"
+              phx-change={["volume-", @id]}
           />
+          </form>
         </div>
-      </form>
 
     </div>
     """

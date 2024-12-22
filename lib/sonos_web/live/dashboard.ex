@@ -1,4 +1,6 @@
 defmodule SonosWeb.Dashboard do
+  require Logger
+
   use SonosWeb, :live_view
   alias __MODULE__
 
@@ -24,11 +26,23 @@ defmodule SonosWeb.Dashboard do
     {:noreply, socket}
   end
 
+
+  # TODO FIXME for as long as this live view is open we need to continually renew subscriptions for the
+  # open live component. They cannot be allowed to ever expire.
+
   @impl true
   def handle_info({:updated, service}, socket) do
-    send_update(Dashboard.GroupListComponent, id: "group-list", service: service)
+    case socket.assigns[:action] do
+      :list_groups ->
+        send_update(Dashboard.GroupListComponent, id: "group-list", service: service)
+
+      _ ->
+        :ok
+    end
+
     {:noreply, socket}
   end
+
 
 
   #  defp apply_action(socket, :index, _params) do

@@ -116,6 +116,12 @@ defmodule Sonos.Device do
       |> then(fn
         {:ok, %HTTPoison.Response{status_code: 200}} ->
           {:ok, Timex.now()}
+
+        {:ok, %HTTPoison.Response{} = resp} ->
+          {:error, {:unable_to_resubscribe, resp}}
+
+        err ->
+          err
       end)
     end
   end

@@ -33,7 +33,7 @@ defmodule Sonos.SSDP.Message do
   def from_response(str) do
     res =
       str
-      |> String.split("\r\n")
+      |> String.split("\r\n", trim: true)
       # |> IO.inspect(label: "SSDP message")
       |> Enum.reduce(nil, fn
         "NOTIFY * HTTP/1.1", nil ->

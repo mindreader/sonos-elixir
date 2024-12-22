@@ -132,7 +132,7 @@ defmodule Sonos.SSDP do
     stale_devices = State.stale_devices(state)
 
     if stale_devices |> Enum.any?() do
-      Logger.info("Removing stale devices #{stale_devices |> Map.keys() |> Enum.join(", ")}")
+      Logger.debug("Removing stale devices #{stale_devices |> Map.keys() |> Enum.join(", ")}")
     end
 
     state =
@@ -196,7 +196,7 @@ defmodule Sonos.SSDP do
             state
 
           {:remove, device} ->
-            Logger.info("Removing device #{inspect(usn)} from network (#{device.server})")
+            Logger.debug("Removing device #{inspect(usn)} from network (#{device.server})")
 
             state.subscribers
             |> Enum.each(fn {pid, subscriber} ->
@@ -210,7 +210,7 @@ defmodule Sonos.SSDP do
           {:update, nil} ->
             with {:ok, %SSDP.Device{} = device} <- SSDP.Device.from_headers(msg, ip) do
 
-              # Logger.debug("Noticed new device #{inspect(usn)} on network (#{device.server})")
+              Logger.debug("Noticed new device #{inspect(usn)} on network (#{device.server})")
 
               state.subscribers
               |> Enum.each(fn {pid, subscriber} ->

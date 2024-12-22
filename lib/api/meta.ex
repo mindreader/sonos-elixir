@@ -398,6 +398,8 @@ defmodule Sonos.Api.Meta do
 
     soap_fetch =
       quote do
+        Sonos.Server.cache_service(unquote(endpoint), unquote(service_module))
+
         Sonos.Soap.Control.new(
           unquote(control_url),
           unquote(service_type),

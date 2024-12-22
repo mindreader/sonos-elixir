@@ -65,6 +65,9 @@ defmodule Sonos do
             |> Enum.map(fn zone -> zone.members end)
             |> Enum.concat()
             |> Enum.uniq_by(fn zone -> zone.uuid end)
+            |> Enum.filter(fn member ->
+              devices[member.uuid]
+            end)
             |> Enum.map(fn member ->
               member
               |> Map.put(:leader, member.uuid == leader)
@@ -73,6 +76,9 @@ defmodule Sonos do
             end)
             |> Enum.sort_by(fn member -> !member.leader end)
         }
+      end)
+      |> Enum.filter(fn group ->
+        group.members |> Enum.count() > 0
       end)
       |> Enum.sort_by(fn group -> group.id end)
     end)
@@ -85,7 +91,8 @@ defmodule Sonos do
   def is_playing?(%Sonos.Device{} = device) do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_transport_info, [0])
     |> then(fn {:ok, %Sonos.Api.Response{outputs: outputs}} ->
-      outputs[:current_transport_state] == "PLAYING"
+
+      outputs[:current_transport_state] in ["TRANSITIONING", "PLAYING"]
     end)
   end
 
