@@ -536,20 +536,20 @@ defmodule SonosWeb.CoreComponents do
 
   def track_info(assigns) do
     ~H"""
-    <div class="bg-slate-500 text-white m-2 rounded-lg p-2 px-4 mt-0">
+    <div class="bg-slate-500 text-white m-2 rounded-lg p-2 px-4 mt-0 border border-slate-600">
       <img src={@art} class="m-2 mx-auto mb-0"/>
-      <div class="flex flex-col">
-        <span class="text-sm">
-          <.icon name="hero-musical-note"/>
-          <%= @song %> - <%= @album %>
-        </span>
-        <span class="text-xs">
-          <.icon name="hero-at-symbol"/>
-          <%= @artist %>
-        </span>
-        <span class="text-xs">
-          <%= @track_duration %>
-        </span>
+      <div class="grid grid-cols-2">
+          <.icon name="hero-musical-note" class="size-4 row-start-1"/>
+          <div class="text-sm">
+            <%= @song %> - <%= @album %>
+          </div>
+          <.icon name="hero-at-symbol" class="size-4 row-start-2"/>
+          <div class="text-sm">
+            <%= @artist %>
+          </div>
+          <div class="text-xs row-start-3">
+            <%= @track_duration %>
+          </div>
       </div>
     </div>
     """
@@ -566,10 +566,15 @@ defmodule SonosWeb.CoreComponents do
 
   def player_group(assigns) do
     ~H"""
-    <div class="bg-slate-500 text-white m-2 p-2 rounded-lg" phx-click="view-group" phx-target={@target} phx-value-group={@id}>
-        <div class="mx-2">
-          <%= @name %>
-        </div>
+    <div
+      class="bg-slate-500 text-white m-2 p-2 rounded-lg border border-slate-600"
+      phx-click="view-group"
+      phx-target={@target}
+      phx-value-group={@id}
+    >
+      <div class="mx-2">
+        <%= @name %>
+      </div>
 
         <div class="flex flex-nowrap gap-2 mx-2">
           <button
@@ -700,13 +705,13 @@ defmodule SonosWeb.CoreComponents do
 
   def icon(%{name: "hero-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} />
+    <div class={[@name, @class]} />
     """
   end
 
   def icon(%{name: "icon-" <> _} = assigns) do
     ~H"""
-    <span class={[@name, @class]} />
+    <div class={[@name, @class]} />
     """
   end
 
