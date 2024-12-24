@@ -30,7 +30,15 @@ defmodule Sonos.Device do
     %Device{device | state: device_state}
   end
 
-  def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ []) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) when is_atom(service) do
+  def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ [])
+      when is_atom(service)
+      when is_atom(service)
+      when is_atom(service)
+      when is_atom(service)
+      when is_atom(service)
+      when is_atom(service)
+      when is_atom(service)
+      when is_atom(service) do
     timeout = opts[:timeout] || 60 * 5
 
     service_key = service.short_service_type()
@@ -54,7 +62,9 @@ defmodule Sonos.Device do
       when is_atom(service) do
     timeout = opts[:timeout] || 60 * 5
 
-    Logger.info("subscribing to #{service.short_service_type()} on #{device.usn |> Sonos.Api.short_usn()}")
+    Logger.info(
+      "subscribing to #{service.short_service_type()} on #{device.usn |> Sonos.Api.short_usn()}"
+    )
 
     event_endpoint = "#{event_address}/#{device.usn}/#{service.service_type()}"
 
@@ -140,7 +150,6 @@ defmodule Sonos.Device do
     device_state = device.state |> Map.delete(service)
     %Device{device | state: device_state}
   end
-
 
   def identify_task(%Sonos.SSDP.Device{} = dev, opts \\ []) do
     Task.Supervisor.async(Sonos.Tasks, fn ->

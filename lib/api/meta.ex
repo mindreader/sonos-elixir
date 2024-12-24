@@ -451,7 +451,13 @@ defmodule Sonos.Api.Meta do
         unquote(cache_fetch)
         |> then(fn
           {via, {:ok, resp}} ->
-            {:ok, Sonos.Api.Response.new(unquote(action.name), resp.outputs, unquote(action.outputs |> Macro.escape()), via: via)}
+            {:ok,
+             Sonos.Api.Response.new(
+               unquote(action.name),
+               resp.outputs,
+               unquote(action.outputs |> Macro.escape()),
+               via: via
+             )}
 
           {_via, err} ->
             err

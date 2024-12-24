@@ -1,5 +1,6 @@
 defmodule Sonos.Device.Subscription do
   alias __MODULE__
+
   defstruct state: nil,
             subscription_id: nil,
             timeout: nil,
@@ -86,7 +87,8 @@ defmodule Sonos.Device.Subscription do
   """
   def fetch_vars(inputs, outputs) do
     fn %Subscription{state: state} ->
-      outputs |> Enum.reduce(%{}, fn x, accum ->
+      outputs
+      |> Enum.reduce(%{}, fn x, accum ->
         main_value = state
 
         # many commands are prefixed by instance id in their state. If we have input an instance id
@@ -94,32 +96,35 @@ defmodule Sonos.Device.Subscription do
         # is not under the instance id, so we check for both possibilities
         instance_id = inputs |> Keyword.get(:InstanceID, :not_specified)
 
-        main_value = if instance_id != :not_specified do
-          case main_value |> Map.get(to_string(instance_id)) do
-            nil -> main_value
-            value -> value
+        main_value =
+          if instance_id != :not_specified do
+            case main_value |> Map.get(to_string(instance_id)) do
+              nil -> main_value
+              value -> value
+            end
+          else
+            main_value
           end
-        else
-          main_value
-        end
 
         main_value = main_value |> Map.get(x.state_variable |> to_string())
 
         # similar to instance id, if we passed in a channel to this command, use it to find the
         # xml element that is specific to this channel.
-        main_value = if inputs |> Keyword.has_key?(:Channel) && is_list(main_value) do
-          main_value
-          |> Enum.find(fn v -> v["-channel"] == "#{inputs[:Channel]}" end)
-        else
-          main_value
-        end
+        main_value =
+          if inputs |> Keyword.has_key?(:Channel) && is_list(main_value) do
+            main_value
+            |> Enum.find(fn v -> v["-channel"] == "#{inputs[:Channel]}" end)
+          else
+            main_value
+          end
 
         # if the value is a map, then it is a complex type and often times
         # we need to extract the value from it.
-        main_value = case main_value do
-          %{"-val" => val} -> val
-          _ -> main_value
-        end
+        main_value =
+          case main_value do
+            %{"-val" => val} -> val
+            _ -> main_value
+          end
 
         # turn mostly strings to int or booleans as appropriate
         main_value = Sonos.Utils.coerce_data_type(main_value, x.data_type)

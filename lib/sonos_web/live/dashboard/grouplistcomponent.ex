@@ -22,50 +22,59 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
     """
   end
 
-
   def get_groups() do
-      Sonos.groups()
-      |> Enum.map(fn group ->
-        member_count = group.members |> Enum.count()
+    Sonos.groups()
+    |> Enum.map(fn group ->
+      member_count = group.members |> Enum.count()
 
-        leader = group.members |> hd |> Map.get(:device)
-        volume = leader |> Sonos.get_group_volume()
+      leader = group.members |> hd |> Map.get(:device)
+
+      volume =
+        leader
+        |> Sonos.get_group_volume()
         |> then(fn {:ok, %Sonos.Api.Response{} = resp} -> resp.outputs[:current_volume] end)
 
-        playing = leader |> Sonos.is_playing?()
-        play_state = leader |> Sonos.get_play_state()
+      playing = leader |> Sonos.is_playing?()
+      play_state = leader |> Sonos.get_play_state()
 
-        name = leader.room_name
-        name =
-          if member_count > 1 do
-            "#{name} + #{member_count - 1}"
-          else
-            name
-          end
+      name = leader.room_name
 
-        {group.id,
-         %{
-           id: group.id,
-           name: name,
-           members: group.members,
-           playing: playing,
-           shuffle: Sonos.shuffle_enabled?(play_state),
-           continue: Sonos.continue_enabled?(play_state),
-           volume: volume,
-         }}
-      end)
-      |> Map.new()
+      name =
+        if member_count > 1 do
+          "#{name} + #{member_count - 1}"
+        else
+          name
+        end
 
-
+      {group.id,
+       %{
+         id: group.id,
+         name: name,
+         members: group.members,
+         playing: playing,
+         shuffle: Sonos.shuffle_enabled?(play_state),
+         continue: Sonos.continue_enabled?(play_state),
+         volume: volume
+       }}
+    end)
+    |> Map.new()
   end
 
   @impl true
-  def mount(socket) do
-    ["RenderingControl:1", "GroupRenderingControl:1", "AVTransport:1"]
-    |> Enum.each(fn service ->
-      Phoenix.PubSub.subscribe(Sonos.PubSub, service)
-    end)
+  def mount(_params, _session, socket) do
+    # TODO just subscribe to one event and refresh on every single event
+    # ["RenderingControl:1", "GroupRenderingControl:1", "AVTransport:1"]
+    # |> Enum.each(fn service ->
+    #   Phoenix.PubSub.subscribe(Sonos.PubSub, service)
+    # end)
 
+    socket
+    |> assign(:groups, nil)
+    |> then(fn socket -> {:ok, socket} end)
+  end
+
+  @impl true
+  def update(_assigns, socket) do
     groups = get_groups()
 
     socket
@@ -74,155 +83,155 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
   end
 
   @impl true
-  def update(_assigns, socket) do
-    groups = get_groups()
-    socket |> assign(:groups, groups)
-    |> then(fn socket -> {:ok, socket} end)
+  def handle_event("play", %{"group" => group_id}, socket) do
+    socket.assigns.groups
+    |> Map.get(group_id)
+    |> Map.get(:members)
+    # the first member is the leader
+    |> hd
+    |> Map.get(:device)
+    |> Sonos.play()
+    |> then(fn
+      {:ok, _} ->
+        {:noreply, socket}
+
+      {:error, _} ->
+        Logger.error("Failed to play group #{group_id}")
+
+        {:noreply, socket}
+    end)
   end
 
- @impl true
- def handle_event("play", %{"value" => group_id}, socket) do
-     socket.assigns.groups
-     |> Map.get(group_id)
-     |> Map.get(:members)
-     # the first member is the leader
-     |> hd
-     |> Map.get(:device)
-     |> Sonos.play()
-     |> then(fn
-       {:ok, _} ->
-         {:noreply, socket}
+  @impl true
+  def handle_event("pause", %{"group" => group_id}, socket) do
+    socket.assigns.groups
+    |> Map.get(group_id)
+    |> Map.get(:members)
+    # the first member is the leader
+    |> hd
+    |> Map.get(:device)
+    |> Sonos.pause()
 
-       {:error, _} ->
-         Logger.error("Failed to play group #{group_id}")
+    {:noreply, socket}
+  end
 
-         {:noreply, socket}
-     end)
- end
+  @impl true
+  def handle_event("shuffle", %{"group" => group_id}, socket) do
+    play_state =
+      socket.assigns.groups
+      |> Map.get(group_id)
+      |> Map.get(:play_state)
 
- @impl true
- def handle_event("pause", %{"value" => group_id}, socket) do
-     socket.assigns.groups
-     |> Map.get(group_id)
-     |> Map.get(:members)
-     # the first member is the leader
-     |> hd
-     |> Map.get(:device)
-     |> Sonos.pause()
+    new_play_state =
+      case play_state do
+        :shuffle_norepeat -> :normal
+        :shuffle_repeat_one -> :repeat_one
+        :shuffle -> :repeat_all
+        :normal -> :shuffle_norepeat
+        :repeat_one -> :shuffle_repeat_one
+        :repeat_all -> :shuffle
+      end
 
-   {:noreply, socket}
- end
+    socket.assigns.groups
+    |> Map.get(group_id)
+    |> Map.get(:members)
+    |> hd
+    |> Map.get(:device)
+    |> then(fn device ->
+      device |> Sonos.set_play_state(new_play_state)
+    end)
 
- @impl true
- def handle_event("shuffle", %{"value" => group_id}, socket) do
-   play_state =
-     socket.assigns.groups
-     |> Map.get(group_id)
-     |> Map.get(:play_state)
+    {:noreply, socket}
+  end
 
-     play_state |> IO.inspect(label: "play_state")
-   new_play_state =
-     case play_state do
-       :shuffle_norepeat -> :normal
-       :shuffle_repeat_one -> :repeat_one
-       :shuffle -> :repeat_all
-       :normal -> :shuffle_norepeat
-       :repeat_one -> :shuffle_repeat_one
-       :repeat_all -> :shuffle
-     end
-     |> IO.inspect(label: "new_play_state")
+  @impl true
+  def handle_event("next", %{"group" => group_id}, socket) do
+    socket.assigns.groups
+    |> Map.get(group_id)
+    |> Map.get(:members)
+    # the first member is the leader
+    |> hd
+    |> Map.get(:device)
+    |> Sonos.next()
 
-   socket.assigns.groups
-   |> Map.get(group_id)
-   |> Map.get(:members)
-   |> hd
-   |> Map.get(:device)
-   |> then(fn device ->
-     device |> Sonos.set_play_state(new_play_state)
-   end)
+    {:noreply, socket}
+  end
 
-   {:noreply, socket}
- end
+  @impl true
+  def handle_event("previous", %{"group" => group_id}, socket) do
+    socket.assigns.groups
+    |> Map.get(group_id)
+    |> Map.get(:members)
+    # the first member is the leader
+    |> hd
+    |> Map.get(:device)
+    |> Sonos.previous()
 
- @impl true
- def handle_event("next", %{"value" => group_id}, socket) do
-     socket.assigns.groups
-     |> Map.get(group_id)
-     |> Map.get(:members)
-     # the first member is the leader
-     |> hd
-     |> Map.get(:device)
-     |> Sonos.next()
+    {:noreply, socket}
+  end
 
-   {:noreply, socket}
- end
+  @impl true
+  def handle_event("continue", %{"group" => group_id}, socket) do
+    play_state =
+      socket.assigns.groups
+      |> Map.get(group_id)
+      |> Map.get(:play_state)
 
- @impl true
- def handle_event("previous", %{"value" => group_id}, socket) do
-     socket.assigns.groups
-     |> Map.get(group_id)
-     |> Map.get(:members)
-     # the first member is the leader
-     |> hd
-     |> Map.get(:device)
-     |> Sonos.previous()
+    new_state =
+      case play_state do
+        :shuffle_norepeat -> :shuffle_repeat_one
+        :shuffle_repeat_one -> :shuffle
+        :shuffle -> :shuffle_norepeat
+        :normal -> :repeat_one
+        :repeat_one -> :repeat_all
+        :repeat_all -> :normal
+      end
 
-   {:noreply, socket}
- end
+    socket.assigns.groups
+    |> Map.get(group_id)
+    |> Map.get(:members)
+    |> hd
+    |> Map.get(:device)
+    |> then(fn device ->
+      device |> Sonos.set_play_state(new_state)
+    end)
 
- @impl true
- def handle_event("continue", %{"value" => group_id}, socket) do
-   play_state =
-     socket.assigns.groups
-     |> Map.get(group_id)
-     |> Map.get(:play_state)
+    {:noreply, socket}
+  end
 
-   new_state =
-     case play_state do
-       :shuffle_norepeat -> :shuffle_repeat_one
-       :shuffle_repeat_one -> :shuffle
-       :shuffle -> :shuffle_norepeat
-       :normal -> :repeat_one
-       :repeat_one -> :repeat_all
-       :repeat_all -> :normal
-     end
+  @impl true
+  def handle_event("view-group", %{"group" => group_id}, socket) do
+    socket
+    |> push_patch(to: ~p"/group/#{group_id}")
+    |> then(fn socket -> {:noreply, socket} end)
+  end
 
-   socket.assigns.groups
-   |> Map.get(group_id)
-   |> Map.get(:members)
-   |> hd
-   |> Map.get(:device)
-   |> then(fn device ->
-     device |> Sonos.set_play_state(new_state)
-   end)
+  def handle_event("volume", %{"volume" => volume, "group" => group_id}, socket) do
+    old_volume = socket.assigns.groups |> Map.get(group_id) |> Map.get(:volume)
 
-   {:noreply, socket}
- end
+    volume =
+      volume
+      |> Integer.parse()
+      |> then(fn
+        {i, _} when i >= 0 and i <= 100 -> i
+        _ -> old_volume
+      end)
 
- def handle_event("volume-" <> group_id, %{"volume" => volume}, socket) do
-   old_volume = socket.assigns.groups |> Map.get(group_id) |> Map.get(:volume)
+    socket.assigns.groups
+    |> Map.get(group_id)
+    |> Map.get(:members)
+    |> hd
+    |> Map.get(:device)
+    |> Sonos.set_group_volume(volume)
 
-   volume = volume |> Integer.parse() |> then(fn
-     {i, _} when i >= 0 and i <= 100 -> i
-     _ -> old_volume
-   end)
-
-   socket.assigns.groups
-   |> Map.get(group_id)
-   |> Map.get(:members)
-   |> hd
-   |> Map.get(:device)
-   |> Sonos.set_group_volume(volume)
-
-   {:noreply, socket}
- end
+    {:noreply, socket}
+  end
 
   @impl true
   def handle_event(ev, payload, socket) do
     Logger.warning("Unhandled event #{ev} with payload #{inspect(payload)}")
     {:noreply, socket}
   end
-
 
   def handle_info(:updated, _params, socket) do
     {:noreply, socket}

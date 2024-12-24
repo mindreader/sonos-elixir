@@ -17,7 +17,8 @@ defmodule SonosWeb.Router do
   scope "/", SonosWeb do
     pipe_through(:browser)
 
-    live("/", Dashboard, :home)
+    live("/", Dashboard)
+    live("/group/:group", Dashboard)
   end
 
   # Other scopes may use custom stacks.
@@ -33,7 +34,7 @@ defmodule SonosWeb.Router do
     get("/:filename", Audio, :fetch)
   end
 
-  # Enable LiveDashboard and Swoosh mailbox preview in development
+  # Enable LiveDashboaod and Swoosh mailbox preview in development
   if Application.compile_env(:sonos_elixir, :dev_routes) do
     # If you want to use the LiveDashboard in production, you should put
     # it behind authentication and allow only admins to access it.

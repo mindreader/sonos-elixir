@@ -14,8 +14,8 @@ defmodule Sonos.Supervisor do
       {Phoenix.PubSub, name: Sonos.PubSub},
       Sonos.SSDP,
       Sonos.Server,
-      SonosWeb.Endpoint,
-      BigBrother.ReloadServer,
+      SonosWeb.Endpoint
+      #      BigBrother.ReloadServer,
     ]
     |> Supervisor.init(strategy: :one_for_one)
   end

@@ -11,6 +11,12 @@ defmodule SonosWeb.Dashboard do
       id="group-list"
       module={SonosWeb.Dashboard.GroupListComponent}
     />
+
+    <.live_component :if={@action == :view_group}
+      id="group-view"
+      module={SonosWeb.Dashboard.GroupViewComponent}
+      group={@group}
+    />
     """
   end
 
@@ -22,10 +28,16 @@ defmodule SonosWeb.Dashboard do
   end
 
   @impl true
-  def handle_params(_params, _url, socket) do
-    {:noreply, socket}
+  def handle_params(%{"group" => group}, _url, socket) do
+    socket
+    |> assign(:action, :view_group)
+    |> assign(:group, group)
+    |> then(fn socket -> {:noreply, socket} end)
   end
 
+  def handle_params(_params, _url, socket) do
+    socket |> assign(:action, :list_groups) |> then(fn socket -> {:noreply, socket} end)
+  end
 
   # TODO FIXME for as long as this live view is open we need to continually renew subscriptions for the
   # open live component. They cannot be allowed to ever expire.
@@ -36,14 +48,18 @@ defmodule SonosWeb.Dashboard do
       :list_groups ->
         send_update(Dashboard.GroupListComponent, id: "group-list", service: service)
 
+      :view_group ->
+        send_update(Dashboard.GroupViewComponent,
+          id: "group-view-#{socket.assigns.group}",
+          service: service
+        )
+
       _ ->
         :ok
     end
 
     {:noreply, socket}
   end
-
-
 
   #  defp apply_action(socket, :index, _params) do
   #    socket

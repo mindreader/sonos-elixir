@@ -534,7 +534,7 @@ defmodule SonosWeb.CoreComponents do
 
   def player_group(assigns) do
     ~H"""
-    <div id={@id} class="bg-slate-500 text-white m-2 p-2 rounded-lg">
+    <div id={@id} class="bg-slate-500 text-white m-2 p-2 rounded-lg" phx-click="view-group" phx-target={@target} phx-value-group={@id}>
         <div class="mx-2">
           <%= @name %>
         </div>
@@ -550,19 +550,19 @@ defmodule SonosWeb.CoreComponents do
             <.icon name="icon-shuffle" />
           </button>
 
-          <button type="button" phx-click="previous" phx-target={@target} value={@id}>
+          <button type="button" phx-click="previous" phx-target={@target} phx-value-group={@id}>
             <.icon name="hero-backward"/>
           </button>
 
-          <button :if={!@playing} type="button" phx-click="play" phx-target={@target} value={@id}>
+          <button :if={!@playing} type="button" phx-click="play" phx-target={@target} phx-value-group={@id}>
             <.icon name="hero-play-solid" class="size-10" />
           </button>
 
-          <button :if={@playing} type="button" phx-click="pause" phx-target={@target} value={@id}>
+          <button :if={@playing} type="button" phx-click="pause" phx-target={@target} phx-value-group={@id}>
             <.icon name="hero-pause-solid" class="size-10" />
           </button>
 
-          <button type="button" phx-click="next" phx-target={@target} value={@id}>
+          <button type="button" phx-click="next" phx-target={@target} phx-value-group={@id}>
             <.icon name="hero-forward" />
           </button>
 
@@ -570,13 +570,13 @@ defmodule SonosWeb.CoreComponents do
             type="button"
             phx-click="continue"
             phx-target={@target}
-            value={@id}
+            phx-value-group={@id}
             class={["my-auto rounded-full", @continue && "text-slate-500 bg-white"] }
           >
             <.icon name="hero-arrow-path-mini" class=""/>
           </button>
 
-          <form phx-target={@target}>
+          <form phx-target={@target} phx-value-group={@id}>
             <input
               type="range"
               name="volume"
@@ -584,7 +584,8 @@ defmodule SonosWeb.CoreComponents do
               max="100"
               value={@volume}
               class="ml-2 w-full"
-              phx-change={["volume-", @id]}
+              phx-change="volume"
+              phx-click={JS.dispatch("phx:click-ignore")}
           />
           </form>
         </div>

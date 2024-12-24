@@ -84,14 +84,18 @@ defmodule Sonos do
     end)
   end
 
+  def group(group_id) do
+    groups() |> Enum.find(fn group -> group.id == group_id end)
+  end
+
   def play(%Sonos.Device{} = device) do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :play, [0, "1"])
   end
 
   def is_playing?(%Sonos.Device{} = device) do
-    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_transport_info, [0])
+    device
+    |> Sonos.Device.call(MediaRenderer.AVTransport, :get_transport_info, [0])
     |> then(fn {:ok, %Sonos.Api.Response{outputs: outputs}} ->
-
       outputs[:current_transport_state] in ["TRANSITIONING", "PLAYING"]
     end)
   end
@@ -117,20 +121,22 @@ defmodule Sonos do
   end
 
   def set_play_state(%Sonos.Device{} = device, state) do
-    state = case state do
-      :normal -> "NORMAL"
-      :repeat_one -> "REPEAT_ONE"
-      :repeat_all -> "REPEAT_ALL"
-      :shuffle -> "SHUFFLE"
-      :shuffle_norepeat -> "SHUFFLE_NOREPEAT"
-      :shuffle_repeat_one -> "SHUFFLE_REPEAT_ONE"
-    end
+    state =
+      case state do
+        :normal -> "NORMAL"
+        :repeat_one -> "REPEAT_ONE"
+        :repeat_all -> "REPEAT_ALL"
+        :shuffle -> "SHUFFLE"
+        :shuffle_norepeat -> "SHUFFLE_NOREPEAT"
+        :shuffle_repeat_one -> "SHUFFLE_REPEAT_ONE"
+      end
 
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :set_play_mode, [0, state])
   end
 
   def get_play_state(%Sonos.Device{} = device) do
-    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_transport_settings, [0])
+    device
+    |> Sonos.Device.call(MediaRenderer.AVTransport, :get_transport_settings, [0])
     |> then(fn {:ok, %Sonos.Api.Response{outputs: outputs}} ->
       case outputs[:play_mode] do
         "NORMAL" -> :normal
@@ -147,8 +153,10 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.GroupRenderingControl, :get_group_volume, [0])
   end
 
-  def set_group_volume(%Sonos.Device{} = device, volume) when is_integer(volume) and volume >= 0 and volume <= 100 do
-    device |> Sonos.Device.call(MediaRenderer.GroupRenderingControl, :set_group_volume, [0, volume])
+  def set_group_volume(%Sonos.Device{} = device, volume)
+      when is_integer(volume) and volume >= 0 and volume <= 100 do
+    device
+    |> Sonos.Device.call(MediaRenderer.GroupRenderingControl, :set_group_volume, [0, volume])
   end
 
   def server_state do

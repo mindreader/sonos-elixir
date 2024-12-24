@@ -35,12 +35,11 @@ defmodule Sonos.Server do
   end
 
   def update_device_state(usn, service, vars) when is_binary(service) do
+    # LastChange is a special element that allows you to piecemeal update variables rather than
+    # replacing them all. But it is always under an InstanceID for some reason, which I've never
+    # seen be anything other than 0, nonetheless we should endeavour to preserve that as the
+    # instance id is used in various function calls.
     vars =
-
-      # LastChange is a special element that allows you to piecemeal update variables rather than
-      # replacing them all. But it is always under an InstanceID for some reason, which I've never
-      # seen be anything other than 0, nonetheless we should endeavour to preserve that as the
-      # instance id is used in various function calls.
       case vars["LastChange"] do
         last_change when is_binary(last_change) ->
           last_change
@@ -49,8 +48,8 @@ defmodule Sonos.Server do
           |> Sonos.Utils.coerce_to_list()
           |> Enum.map(fn %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
             {instance_id, data}
-         end)
-         |> Map.new()
+          end)
+          |> Map.new()
 
         # most if not all other types of services are just simple key-value pairs, so we can just
         # merge them with the existing state variable by variable. All states I have seen send the
@@ -86,12 +85,11 @@ defmodule Sonos.Server do
   """
   def cache_fetch(endpoint, service, inputs, outputs)
       when is_atom(service) and is_list(outputs) do
-
     f = Sonos.Device.Subscription.fetch_vars(inputs, outputs)
 
     __MODULE__
     |> GenServer.call({:cache_fetch, endpoint, service, f})
- end
+  end
 
   def handle_cast({:update_device_state, usn, service, vars}, %State{} = state)
       when is_binary(service) do
@@ -139,7 +137,9 @@ defmodule Sonos.Server do
     # We don't care about actually fetching anything, but we need to do basically
     # the exact same as it would be in the cache fetch version, but with a guaranteed no output.
     # TODO we could just factor out the logic into a separate function and have both call it.
-    {:reply, _, state} = handle_call({:cache_fetch, endpoint, service, &Function.identity/1}, nil, state)
+    {:reply, _, state} =
+      handle_call({:cache_fetch, endpoint, service, &Function.identity/1}, nil, state)
+
     {:noreply, %State{} = state}
   end
 
@@ -198,7 +198,6 @@ defmodule Sonos.Server do
 
                 {:reply, {:error, :unsubscribed_event}, %State{} = state}
 
-
               %Device.Subscription{state: nil} ->
                 # We have already subscribed to this event type, but haven't received an initial event yet.
                 {:reply, {:error, :unsubscribed_event}, %State{} = state}
@@ -207,18 +206,19 @@ defmodule Sonos.Server do
               %Device.Subscription{} = subscription ->
                 # user has shown interest in this data, keep it up to date.
                 if subscription |> Device.Subscription.expired?() do
-
                   # we have device state but it is so old it could be stale, so we need to
                   # resubscribe from scratch.
-                  {:ok, device} = device |> Device.subscribe_task(
-                    service,
-                    state.our_event_address,
-                    timeout: @default_subscribe_timeout
-                  )
+                  {:ok, device} =
+                    device
+                    |> Device.subscribe_task(
+                      service,
+                      state.our_event_address,
+                      timeout: @default_subscribe_timeout
+                    )
+
                   state = state |> State.replace_device(device)
                   {:reply, {:error, :expired_subscription}, %State{} = state}
                 else
-
                   # we have the state, but it is going to expire at some point, so we should
                   # resubscribe to keep it up to date for awhile longer.
                   state =
@@ -271,31 +271,37 @@ defmodule Sonos.Server do
         {_ref, {:resubscribed, usn, service_key, res}},
         %State{} = state
       ) do
-    state = case res do
-      {:error, {:unable_to_resubscribe, res}} ->
-        # this can happen if we waited too long, not a huge deal but we should try to minimize
-        # this if possible. It could also happen if the device rebooted and lost our subscription.
-        Logger.warning("unable to resubscribe to #{service_key} on #{usn}: #{inspect(res)}")
+    state =
+      case res do
+        {:error, {:unable_to_resubscribe, res}} ->
+          # this can happen if we waited too long, not a huge deal but we should try to minimize
+          # this if possible. It could also happen if the device rebooted and lost our subscription.
+          Logger.warning("unable to resubscribe to #{service_key} on #{usn}: #{inspect(res)}")
 
-        %State { state | devices: state.devices |> Map.replace_lazy(usn,
-          fn device -> device |> Device.resubscribe_failed(service_key) end
-        )
-      }
+          %State{
+            state
+            | devices:
+                state.devices
+                |> Map.replace_lazy(
+                  usn,
+                  fn device -> device |> Device.resubscribe_failed(service_key) end
+                )
+          }
 
-      {:ok, %DateTime{} = dt} ->
-        usn = usn |> Sonos.Api.short_usn()
+        {:ok, %DateTime{} = dt} ->
+          usn = usn |> Sonos.Api.short_usn()
 
-        Logger.info("resubscribed to #{service_key} on #{usn}")
+          Logger.info("resubscribed to #{service_key} on #{usn}")
 
-        %State{
-          state
-          | devices:
-              state.devices
-              |> Map.replace_lazy(usn, fn device ->
-                device |> Device.rebuscribed(service_key, dt)
-              end)
-        }
-    end
+          %State{
+            state
+            | devices:
+                state.devices
+                |> Map.replace_lazy(usn, fn device ->
+                  device |> Device.rebuscribed(service_key, dt)
+                end)
+          }
+      end
 
     {:noreply, %State{} = state}
   end

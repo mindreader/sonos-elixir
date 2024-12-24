@@ -209,7 +209,6 @@ defmodule Sonos.SSDP do
 
           {:update, nil} ->
             with {:ok, %SSDP.Device{} = device} <- SSDP.Device.from_headers(msg, ip) do
-
               Logger.debug("Noticed new device #{inspect(usn)} on network (#{device.server})")
 
               state.subscribers
