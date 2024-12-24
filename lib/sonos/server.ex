@@ -62,7 +62,6 @@ defmodule Sonos.Server do
     __MODULE__ |> GenServer.cast({:update_device_state, usn, service, vars})
   end
 
-  # TODO FIXME this needs to be a cast!
   def cache_service(endpoint, service) when is_atom(service) do
     __MODULE__ |> GenServer.cast({:cache_service, endpoint, service})
     :ok
@@ -101,7 +100,7 @@ defmodule Sonos.Server do
         %Device{} = device |> Device.merge_state(service, vars)
       end)
 
-    Phoenix.PubSub.broadcast(Sonos.PubSub, service, {:updated, service})
+    Phoenix.PubSub.broadcast(Sonos.PubSub, "Sonos.Event", {:updated, service})
 
     state = %State{state | devices: devices}
 
@@ -249,10 +248,10 @@ defmodule Sonos.Server do
   end
 
   def handle_info(
-        {_ref, {:subscribed, usn, service_key, {:ok, {sid, max_age}}}},
+        {_ref, {:subscribed, usn, room_name, service_key, {:ok, {sid, max_age}}}},
         %State{} = state
       ) do
-    Logger.info("subscribed to #{service_key} with sid #{sid} and max_age #{max_age}")
+    Logger.info("subscribed to #{service_key} on #{room_name} with sid #{sid} and max_age #{max_age}")
     usn = usn |> Sonos.Api.short_usn()
 
     state = %State{
@@ -268,7 +267,7 @@ defmodule Sonos.Server do
   end
 
   def handle_info(
-        {_ref, {:resubscribed, usn, service_key, res}},
+        {_ref, {:resubscribed, usn, room_name, service_key, res}},
         %State{} = state
       ) do
     state =
@@ -276,7 +275,7 @@ defmodule Sonos.Server do
         {:error, {:unable_to_resubscribe, res}} ->
           # this can happen if we waited too long, not a huge deal but we should try to minimize
           # this if possible. It could also happen if the device rebooted and lost our subscription.
-          Logger.warning("unable to resubscribe to #{service_key} on #{usn}: #{inspect(res)}")
+          Logger.warning("unable to resubscribe to #{service_key} on #{usn} (#{room_name}): #{inspect(res)}")
 
           %State{
             state
@@ -291,7 +290,7 @@ defmodule Sonos.Server do
         {:ok, %DateTime{} = dt} ->
           usn = usn |> Sonos.Api.short_usn()
 
-          Logger.info("resubscribed to #{service_key} on #{usn}")
+          Logger.info("resubscribed to #{service_key} on #{usn} (#{room_name})")
 
           %State{
             state

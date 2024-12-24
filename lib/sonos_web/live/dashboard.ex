@@ -13,25 +13,30 @@ defmodule SonosWeb.Dashboard do
     />
 
     <.live_component :if={@action == :view_group}
-      id="group-view"
+      id={"group-view-#{@group_id}"}
       module={SonosWeb.Dashboard.GroupViewComponent}
-      group={@group}
+      group={@group_id}
     />
     """
   end
 
   @impl true
   def mount(_params, _session, socket) do
+    self() |> Process.send_after(:periodic_update, :timer.seconds(20))
+
+    Phoenix.PubSub.subscribe(Sonos.PubSub, "Sonos.Event")
+
     socket
     |> assign(:action, :list_groups)
+    |> assign(:group_id, nil)
     |> then(fn socket -> {:ok, socket} end)
   end
 
   @impl true
-  def handle_params(%{"group" => group}, _url, socket) do
+  def handle_params(%{"group" => group_id}, _url, socket) do
     socket
     |> assign(:action, :view_group)
-    |> assign(:group, group)
+    |> assign(:group_id, group_id)
     |> then(fn socket -> {:noreply, socket} end)
   end
 
@@ -43,19 +48,24 @@ defmodule SonosWeb.Dashboard do
   # open live component. They cannot be allowed to ever expire.
 
   @impl true
-  def handle_info({:updated, service}, socket) do
+  def handle_info(event, socket) do
+    event |> IO.inspect(label: "EVENT")
+    # any event from Sonos.Server over pubsub or any periodic event, call the primary refresh
+    # for the currently loaded component, which will cause subscriptions to the sonos devices
+    # that that component relies on to be kept up to date, while all others eventually expire.
     case socket.assigns[:action] do
       :list_groups ->
-        send_update(Dashboard.GroupListComponent, id: "group-list", service: service)
+        send_update(Dashboard.GroupListComponent, id: "group-list")
 
       :view_group ->
-        send_update(Dashboard.GroupViewComponent,
-          id: "group-view-#{socket.assigns.group}",
-          service: service
-        )
+        send_update(Dashboard.GroupViewComponent, id: "group-view-#{socket.assigns.group_id}", group: socket.assigns.group_id)
 
       _ ->
         :ok
+    end
+
+    if event == :periodic_update do
+      self() |> Process.send_after(:periodic_update, :timer.seconds(20))
     end
 
     {:noreply, socket}

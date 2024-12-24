@@ -78,7 +78,8 @@ defmodule Sonos do
         }
       end)
       |> Enum.filter(fn group ->
-        group.members |> Enum.count() > 0
+        group.members |> Enum.count() > 0 &&
+          group.members |> Enum.filter(fn member -> member.leader end) |> Enum.count() == 1
       end)
       |> Enum.sort_by(fn group -> group.id end)
     end)

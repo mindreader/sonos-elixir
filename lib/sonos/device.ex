@@ -31,20 +31,13 @@ defmodule Sonos.Device do
   end
 
   def subscribe_task(%Sonos.Device{} = device, service, event_address, opts \\ [])
-      when is_atom(service)
-      when is_atom(service)
-      when is_atom(service)
-      when is_atom(service)
-      when is_atom(service)
-      when is_atom(service)
-      when is_atom(service)
       when is_atom(service) do
     timeout = opts[:timeout] || 60 * 5
 
     service_key = service.short_service_type()
 
     Task.Supervisor.async(Sonos.Tasks, fn ->
-      {:subscribed, device.usn, service_key, subscribe(device, service, event_address, opts)}
+      {:subscribed, device.usn, device.room_name, service_key, subscribe(device, service, event_address, opts)}
     end)
 
     device_state = Subscription.new(timeout: timeout)
@@ -63,7 +56,7 @@ defmodule Sonos.Device do
     timeout = opts[:timeout] || 60 * 5
 
     Logger.info(
-      "subscribing to #{service.short_service_type()} on #{device.usn |> Sonos.Api.short_usn()}"
+      "subscribing to #{service.short_service_type()} on #{device.usn |> Sonos.Api.short_usn()} (#{device.room_name})"
     )
 
     event_endpoint = "#{event_address}/#{device.usn}/#{service.service_type()}"
@@ -106,7 +99,7 @@ defmodule Sonos.Device do
 
       %Subscription{} = state ->
         Task.Supervisor.async(Sonos.Tasks, fn ->
-          {:resubscribed, device.usn, service_key, resubscribe(device, service, state)}
+          {:resubscribed, device.usn, device.room_name, service_key, resubscribe(device, service, state)}
         end)
 
         device_state = state |> Subscription.resubscribe_sent(Timex.now())
