@@ -524,6 +524,38 @@ defmodule SonosWeb.CoreComponents do
     """
   end
 
+
+  # TODO this doesn't technically need to be identified by group, because there will only ever be
+  # one on screen, that said, it could be made to work that way if ever needed.
+  attr(:target, :any, required: true)
+  attr(:song, :string)
+  attr(:artist, :string)
+  attr(:album, :string)
+  attr(:track_duration, :string)
+  attr(:art, :string)
+
+  def track_info(assigns) do
+    ~H"""
+    <div class="bg-slate-500 text-white m-2 rounded-lg p-2 px-4 mt-0">
+      <img src={@art} class="m-2 mx-auto mb-0"/>
+      <div class="flex flex-col">
+        <span class="text-sm">
+          <.icon name="hero-musical-note"/>
+          <%= @song %> - <%= @album %>
+        </span>
+        <span class="text-xs">
+          <.icon name="hero-at-symbol"/>
+          <%= @artist %>
+        </span>
+        <span class="text-xs">
+          <%= @track_duration %>
+        </span>
+      </div>
+    </div>
+    """
+  end
+
+  # TODO rename id -> "group_id"
   attr(:id, :string, required: true)
   attr(:target, :any, required: true)
   attr(:name, :string, required: true)
@@ -534,7 +566,7 @@ defmodule SonosWeb.CoreComponents do
 
   def player_group(assigns) do
     ~H"""
-    <div id={@id} class="bg-slate-500 text-white m-2 p-2 rounded-lg" phx-click="view-group" phx-target={@target} phx-value-group={@id}>
+    <div class="bg-slate-500 text-white m-2 p-2 rounded-lg" phx-click="view-group" phx-target={@target} phx-value-group={@id}>
         <div class="mx-2">
           <%= @name %>
         </div>

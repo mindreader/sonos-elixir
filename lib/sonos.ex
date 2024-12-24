@@ -160,6 +160,10 @@ defmodule Sonos do
     |> Sonos.Device.call(MediaRenderer.GroupRenderingControl, :set_group_volume, [0, volume])
   end
 
+  def get_audio_info(%Sonos.Device{} = device) do
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0])
+  end
+
   def server_state do
     Sonos.Server |> GenServer.call(:state)
   end

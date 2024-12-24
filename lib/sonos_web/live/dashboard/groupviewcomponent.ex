@@ -1,10 +1,21 @@
 defmodule SonosWeb.Dashboard.GroupViewComponent do
   use SonosWeb, :live_component
 
+
+  # TODO we need a better looking player group for dedicated group use that spans entire screen
+  # etc.
   @impl true
   def render(assigns) do
     ~H"""
-    <div id={"group-view-#{@group.id}"}>
+    <div id="group-view">
+      <.track_info
+        target={@myself}
+        artist={@group.artist}
+        album={@group.album}
+        song={@group.song}
+        track_duration={@group.track_duration}
+        art={@group.art}
+      />
       <.player_group
         id={@group.id}
         target={@myself}
@@ -19,7 +30,8 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
   end
 
   def get_group(id) do
-    Sonos.group(id)
+    id
+    |> Sonos.group()
     |> then(fn group ->
       member_count = group.members |> Enum.count()
       leader = group.members |> hd |> Map.get(:device)
@@ -41,6 +53,18 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
           name
         end
 
+      audio_info =
+        leader
+        |> Sonos.get_audio_info()
+        |> then(fn {:ok, %Sonos.Api.Response{} = resp} -> resp.outputs end)
+
+      track_duration = audio_info[:track_duration]
+      track_meta_data = audio_info[:track_meta_data]
+      song = track_meta_data.song
+      artist = track_meta_data.artist
+      album = track_meta_data.album
+      art = leader.endpoint <> track_meta_data.art
+
       %{
         id: group.id,
         name: name,
@@ -48,7 +72,12 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         playing: playing,
         shuffle: Sonos.shuffle_enabled?(play_state),
         continue: Sonos.continue_enabled?(play_state),
-        volume: volume
+        volume: volume,
+        artist: artist,
+        album: album,
+        song: song,
+        track_duration: track_duration,
+        art: art
       }
     end)
   end
@@ -59,8 +88,18 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
   end
 
   @impl true
-  def update(assigns, socket) do
-    assigns.group
+  def update(%{group: group_id}, socket) do
+    group_id
+    |> get_group()
+    |> then(fn group ->
+      socket |> assign(:group, group) |> then(fn socket -> {:ok, socket} end)
+    end)
+  end
+
+  # any other event, update existing group.
+  @impl true
+  def update(_, socket) do
+    socket.assigns.group.id
     |> get_group()
     |> then(fn group ->
       socket |> assign(:group, group) |> then(fn socket -> {:ok, socket} end)

@@ -49,7 +49,6 @@ defmodule SonosWeb.Dashboard do
 
   @impl true
   def handle_info(event, socket) do
-    event |> IO.inspect(label: "EVENT")
     # any event from Sonos.Server over pubsub or any periodic event, call the primary refresh
     # for the currently loaded component, which will cause subscriptions to the sonos devices
     # that that component relies on to be kept up to date, while all others eventually expire.

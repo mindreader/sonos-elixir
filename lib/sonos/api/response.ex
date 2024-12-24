@@ -20,6 +20,9 @@ defmodule Sonos.Api.Response do
           {:preset_name_list, :string} ->
             {name, val |> String.split(",")}
 
+          {:track_meta_data, :string} ->
+            {name, val |> track_meta_data_parse()}
+
           {_, :boolean} ->
             {name, val["-val"] == "1"}
 
@@ -66,6 +69,25 @@ defmodule Sonos.Api.Response do
           }
         end)
       end)
+    end)
+  end
+
+  def track_meta_data_parse(val) do
+    val
+    |> XmlToMap.naive_map()
+    |> then(fn json ->
+      json["DIDL-Lite"]["item"]["#content"]
+    end)
+    |> then(fn json ->
+      %{
+        class: json["upnp:class"], # eg. object.item.audioItem.musicTrack
+        artist: json["dc:creator"],
+        song: json["dc:title"],
+        album: json["upnp:album"],
+        # TODO figure out how to decode content URI
+        content: json["res"],
+        art: json["upnp:albumArtURI"]
+      }
     end)
   end
 
