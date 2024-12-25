@@ -566,6 +566,9 @@ defmodule SonosWeb.CoreComponents do
   attr(:continue, :boolean, required: true)
   attr(:volume, :integer, required: true)
 
+
+  # FIXME dynamically adding a border to the buttons causes the buttons and volume to the right to shift a pixel.
+  # but it looks so much better we are going to leave it for now.
   def player_group(assigns) do
     ~H"""
     <div
@@ -578,42 +581,50 @@ defmodule SonosWeb.CoreComponents do
         <%= @name %>
       </div>
 
-        <div class="flex flex-nowrap gap-2 mx-2">
-          <button
-            type="button"
+        <div class="flex flex-nowrap gap-2 mx-2 leading-none">
+          <div
             phx-click="shuffle"
             phx-target={@target}
             phx-value-group={@id}
-            class={["my-auto rounded-full", @shuffle && "text-slate-500 bg-white"]}
+            class={["my-auto", @shuffle && "text-slate-500 bg-white rounded-full border border-slate-400 shadow-sm"]}
           >
-            <.icon name="icon-shuffle" />
-          </button>
+            <.icon name="icon-shuffle" class="size-6"/>
+          </div>
 
-          <button type="button" phx-click="previous" phx-target={@target} phx-value-group={@id}>
-            <.icon name="hero-backward"/>
-          </button>
+          <div
+            phx-click="previous"
+            phx-target={@target}
+            phx-value-group={@id}
+            class="my-auto"
+          >
+            <.icon name="hero-backward" class="size-6"/>
+          </div>
 
-          <button :if={!@playing} type="button" phx-click="play" phx-target={@target} phx-value-group={@id}>
+          <div :if={!@playing} phx-click="play" phx-target={@target} phx-value-group={@id}>
             <.icon name="hero-play-solid" class="size-10" />
-          </button>
+          </div>
 
-          <button :if={@playing} type="button" phx-click="pause" phx-target={@target} phx-value-group={@id}>
+          <div :if={@playing} phx-click="pause" phx-target={@target} phx-value-group={@id}>
             <.icon name="hero-pause-solid" class="size-10" />
-          </button>
+          </div>
 
-          <button type="button" phx-click="next" phx-target={@target} phx-value-group={@id}>
-            <.icon name="hero-forward" />
-          </button>
+          <div
+            phx-click="next"
+            phx-target={@target}
+            phx-value-group={@id}
+            class="my-auto"
+          >
+            <.icon name="hero-forward" class="size-6"/>
+          </div>
 
-          <button
-            type="button"
+          <div
             phx-click="continue"
             phx-target={@target}
             phx-value-group={@id}
-            class={["my-auto rounded-full", @continue && "text-slate-500 bg-white"] }
+            class={["my-auto", @continue && "text-slate-500 bg-white rounded-full border border-slate-400 shadow-sm"]}
           >
-            <.icon name="hero-arrow-path-mini" class=""/>
-          </button>
+            <.icon name="hero-arrow-path-mini" class="size-6"/>
+          </div>
 
           <form phx-target={@target} phx-value-group={@id}>
             <input
