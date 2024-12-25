@@ -21,8 +21,8 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         target={@myself}
         name={@group.name}
         playing={@group.playing}
-        shuffle={@group.shuffle}
-        continue={@group.continue}
+        shuffle={Sonos.shuffle_enabled?(@group.play_state)}
+        continue={Sonos.continue_enabled?(@group.play_state)}
         volume={@group.volume}
       />
     </div>
@@ -70,8 +70,7 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         name: name,
         members: group.members,
         playing: playing,
-        shuffle: Sonos.shuffle_enabled?(play_state),
-        continue: Sonos.continue_enabled?(play_state),
+        play_state: play_state,
         volume: volume,
         artist: artist,
         album: album,

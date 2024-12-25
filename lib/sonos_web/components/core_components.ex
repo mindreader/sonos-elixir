@@ -538,19 +538,21 @@ defmodule SonosWeb.CoreComponents do
     ~H"""
     <div class="bg-slate-500 text-white m-2 rounded-lg p-2 px-4 mt-0 border border-slate-600">
       <img src={@art} class="m-2 mx-auto mb-0"/>
-      <div class="grid grid-cols-2">
+      <div class="grid auto-cols-min text-nowrap gap-x-2">
           <.icon name="hero-musical-note" class="size-4 row-start-1"/>
-          <div class="text-sm">
+          <div class="text-sm col-start-2">
             <%= @song %> - <%= @album %>
           </div>
-          <.icon name="hero-at-symbol" class="size-4 row-start-2"/>
+          <.icon name="hero-at-symbol" class="size-4 row-start-2 col-start-1"/>
           <div class="text-sm">
             <%= @artist %>
           </div>
-          <div class="text-xs row-start-3">
+          <div class="text-xs row-start-3 col-start-2">
             <%= @track_duration %>
           </div>
-      </div>
+
+
+     </div>
     </div>
     """
   end
@@ -581,7 +583,7 @@ defmodule SonosWeb.CoreComponents do
             type="button"
             phx-click="shuffle"
             phx-target={@target}
-            value={@id}
+            phx-value-group={@id}
             class={["my-auto rounded-full", @shuffle && "text-slate-500 bg-white"]}
           >
             <.icon name="icon-shuffle" />
