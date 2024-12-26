@@ -181,7 +181,7 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         :repeat_all -> :shuffle
       end
 
-    socket.assigns.group
+    socket.assigns.group.members |> hd |> Map.get(:device)
     |> Sonos.set_play_state(new_play_state)
 
     {:noreply, socket}
