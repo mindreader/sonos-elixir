@@ -189,6 +189,7 @@ defmodule Sonos.Api.Meta do
                   # functions like "FooUUIDsService" would get changed to "foo_uui_ds_service" by Macro.underscore
                   |> String.replace("UUIDs", "Uuids")
                   |> String.replace("IDs", "Ids")
+                  |> String.replace("URI", "Uri")
                   |> Macro.underscore()
                   |> String.to_atom()
                 end
