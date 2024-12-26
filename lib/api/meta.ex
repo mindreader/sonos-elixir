@@ -378,7 +378,7 @@ defmodule Sonos.Api.Meta do
             end
 
             def short_service_type do
-              unquote(service_type |> String.replace("urn:schemas-upnp-org:service:", ""))
+              unquote(service_type |> String.replace("urn:schemas-upnp-org:service:", "") |> String.replace("urn:schemas-sonos-com:service:", ""))
             end
           end
         end
