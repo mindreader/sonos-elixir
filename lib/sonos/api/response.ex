@@ -13,17 +13,19 @@ defmodule Sonos.Api.Response do
       |> Enum.map(fn {name, val} ->
         output_type = output_types |> Map.get(name, nil)
 
-        case {name, output_type} do
-          {:zone_group_state, :string} ->
+        case {command, name, output_type} do
+          {_, :zone_group_state, :string} ->
             {name, val |> zone_group_state_parse()}
 
-          {:preset_name_list, :string} ->
+          {_, :preset_name_list, :string} ->
             {name, val |> String.split(",")}
 
-          {:track_meta_data, :string} ->
+          {_, :track_meta_data, :string} ->
             {name, val |> track_meta_data_parse()}
+          {:browse, :result, :string} ->
+            {name, val |> browse_result_parse()}
 
-          {_, :boolean} ->
+          {_, _, :boolean} ->
             {name, val["-val"] == "1"}
 
           # {_, x} when x in [:ui1, :ui2, :ui4, :i1, :i2, :i4] ->
@@ -88,6 +90,28 @@ defmodule Sonos.Api.Response do
         content: json["res"],
         art: json["upnp:albumArtURI"]
       }
+    end)
+  end
+
+  def browse_result_parse(val) do
+    val
+    |> XmlToMap.naive_map()
+    |> then(fn json ->
+      json["DIDL-Lite"]["item"]
+      |> Enum.map(fn item ->
+        item = item["#content"]
+        queue_id = item["-id"]
+
+        %{
+          class: item["upnp:class"],
+          artist: item["dc:creator"],
+          song: item["dc:title"],
+          album: item["upnp:album"],
+          content: item["res"],
+          art: item["upnp:albumArtURI"],
+          queue_id: queue_id
+        }
+      end)
     end)
   end
 

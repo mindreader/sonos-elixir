@@ -46,9 +46,17 @@ defmodule Sonos.Server do
           |> XmlToMap.naive_map()
           |> Map.get("Event")
           |> Sonos.Utils.coerce_to_list()
-          |> Enum.map(fn %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
-            {instance_id, data}
+          |> Enum.map(fn
+            %{"InstanceID" => %{"-val" => instance_id, "#content" => data}} ->
+              [{instance_id, data}]
+
+            %{"QueueID" => content} ->
+              content
+              |> Enum.map(fn %{"-val" => queue_id, "#content" => data} ->
+                {queue_id, data}
+              end)
           end)
+          |> Enum.concat()
           |> Map.new()
 
         # most if not all other types of services are just simple key-value pairs, so we can just
