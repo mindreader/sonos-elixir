@@ -164,6 +164,34 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0])
   end
 
+  def stream_queue(%Sonos.Device{} = device, queue_id, opts \\ []) do
+    count = opts[:count] || 10
+    offset = opts[:offset] || 0
+
+    fetch = fn offset ->
+      device |> Sonos.Device.call(MediaRenderer.Queue, :browse, [queue_id, offset, count])
+    end
+
+    res = fn -> fetch.(offset) end
+
+    {offset, res} |> Stream.unfold(fn
+        nil ->
+          nil
+
+        {offset, func} ->
+          func.() |> case do
+            {:ok, %Sonos.Api.Response{outputs: outputs}} ->
+              if (offset + 1) * count >= outputs[:total_matches] do
+                {outputs[:result], nil}
+              else
+                next = {offset + 1, fn -> fetch.(offset + 1) end}
+                {outputs[:result], next}
+              end
+          end
+      end)
+      |> Stream.concat()
+  end
+
   def server_state do
     Sonos.Server |> GenServer.call(:state)
   end
