@@ -64,6 +64,13 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
       album = track_meta_data.album
       art = leader.endpoint <> track_meta_data.art
 
+      queue = [%{
+        song: "Songname",
+        artist: "Artistname",
+        album: "Albumname",
+        art: "https://picsum.photos/200/300"
+      }]
+
       %{
         id: group.id,
         name: name,
@@ -75,7 +82,8 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         album: album,
         song: song,
         track_duration: track_duration,
-        art: art
+        art: art,
+        queue: queue
       }
     end)
   end

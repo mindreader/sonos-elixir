@@ -100,18 +100,22 @@ defmodule Sonos.Api.Response do
     |> XmlToMap.naive_map()
     |> then(fn json ->
       json["DIDL-Lite"]["item"]
+      |> Sonos.Utils.coerce_to_list()
       |> Enum.map(fn item ->
-        item = item["#content"]
         queue_id = item["-id"]
+
+        item = item["#content"]
+        res = item["res"]
+        track_duration = res["-duration"]
 
         %{
           class: item["upnp:class"],
           artist: item["dc:creator"],
           song: item["dc:title"],
           album: item["upnp:album"],
-          content: item["res"],
           art: item["upnp:albumArtURI"],
-          queue_id: queue_id
+          queue_id: queue_id,
+          track_duration: track_duration
         }
       end)
     end)

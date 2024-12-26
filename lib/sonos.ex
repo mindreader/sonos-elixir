@@ -174,24 +174,22 @@ defmodule Sonos do
 
     res = fn -> fetch.(offset) end
 
-    {offset, res}
-    |> Stream.unfold(fn
-      nil ->
-        nil
+    {offset, res} |> Stream.unfold(fn
+        nil ->
+          nil
 
-      {offset, func} ->
-        func.()
-        |> case do
-          {:ok, %Sonos.Api.Response{outputs: outputs}} ->
-            if (offset + 1) * count >= outputs[:total_matches] do
-              {outputs[:result], nil}
-            else
-              next = {offset + 1, fn -> fetch.(offset + 1) end}
-              {outputs[:result], next}
-            end
-        end
-    end)
-    |> Stream.concat()
+        {offset, func} ->
+          func.() |> case do
+            {:ok, %Sonos.Api.Response{outputs: outputs}} ->
+              if (offset + 1) * count >= outputs[:total_matches] do
+                {outputs[:result], nil}
+              else
+                next = {offset + 1, fn -> fetch.(offset + 1) end}
+                {outputs[:result], next}
+              end
+          end
+      end)
+      |> Stream.concat()
   end
 
   def server_state do
