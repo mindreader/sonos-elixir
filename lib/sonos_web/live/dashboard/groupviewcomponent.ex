@@ -1,7 +1,6 @@
 defmodule SonosWeb.Dashboard.GroupViewComponent do
   use SonosWeb, :live_component
 
-
   # TODO we need a better looking player group for dedicated group use that spans entire screen
   # etc.
   @impl true
@@ -181,7 +180,9 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         :repeat_all -> :shuffle
       end
 
-    socket.assigns.group.members |> hd |> Map.get(:device)
+    socket.assigns.group.members
+    |> hd
+    |> Map.get(:device)
     |> Sonos.set_play_state(new_play_state)
 
     {:noreply, socket}

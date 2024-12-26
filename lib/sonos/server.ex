@@ -259,7 +259,10 @@ defmodule Sonos.Server do
         {_ref, {:subscribed, usn, room_name, service_key, {:ok, {sid, max_age}}}},
         %State{} = state
       ) do
-    Logger.info("subscribed to #{service_key} on #{room_name} with sid #{sid} and max_age #{max_age}")
+    Logger.info(
+      "subscribed to #{service_key} on #{room_name} with sid #{sid} and max_age #{max_age}"
+    )
+
     usn = usn |> Sonos.Api.short_usn()
 
     state = %State{
@@ -285,7 +288,9 @@ defmodule Sonos.Server do
           # this if possible. It could also happen if the device rebooted and lost our subscription.
           # this just means next time we run a command for this service we will have to fetch it, and at
           # that time we will create a new subscription.
-          Logger.warning("unable to resubscribe to #{service_key} on #{usn} (#{room_name}): #{inspect(res)}")
+          Logger.warning(
+            "unable to resubscribe to #{service_key} on #{usn} (#{room_name}): #{inspect(res)}"
+          )
 
           %State{
             state

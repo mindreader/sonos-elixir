@@ -37,7 +37,8 @@ defmodule Sonos.Device do
     service_key = service.short_service_type()
 
     Task.Supervisor.async(Sonos.Tasks, fn ->
-      {:subscribed, device.usn, device.room_name, service_key, subscribe(device, service, event_address, opts)}
+      {:subscribed, device.usn, device.room_name, service_key,
+       subscribe(device, service, event_address, opts)}
     end)
 
     device_state = Subscription.new(timeout: timeout)
@@ -99,7 +100,8 @@ defmodule Sonos.Device do
 
       %Subscription{} = state ->
         Task.Supervisor.async(Sonos.Tasks, fn ->
-          {:resubscribed, device.usn, device.room_name, service_key, resubscribe(device, service, state)}
+          {:resubscribed, device.usn, device.room_name, service_key,
+           resubscribe(device, service, state)}
         end)
 
         device_state = state |> Subscription.resubscribe_sent(Timex.now())

@@ -57,7 +57,10 @@ defmodule SonosWeb.Dashboard do
         send_update(Dashboard.GroupListComponent, id: "group-list")
 
       :view_group ->
-        send_update(Dashboard.GroupViewComponent, id: "group-view-#{socket.assigns.group_id}", group: socket.assigns.group_id)
+        send_update(Dashboard.GroupViewComponent,
+          id: "group-view-#{socket.assigns.group_id}",
+          group: socket.assigns.group_id
+        )
 
       _ ->
         :ok

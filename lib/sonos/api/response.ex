@@ -22,6 +22,7 @@ defmodule Sonos.Api.Response do
 
           {_, :track_meta_data, :string} ->
             {name, val |> track_meta_data_parse()}
+
           {:browse, :result, :string} ->
             {name, val |> browse_result_parse()}
 
@@ -82,7 +83,8 @@ defmodule Sonos.Api.Response do
     end)
     |> then(fn json ->
       %{
-        class: json["upnp:class"], # eg. object.item.audioItem.musicTrack
+        # eg. object.item.audioItem.musicTrack
+        class: json["upnp:class"],
         artist: json["dc:creator"],
         song: json["dc:title"],
         album: json["upnp:album"],

@@ -524,7 +524,6 @@ defmodule SonosWeb.CoreComponents do
     """
   end
 
-
   # TODO this doesn't technically need to be identified by group, because there will only ever be
   # one on screen, that said, it could be made to work that way if ever needed.
   attr(:target, :any, required: true)
@@ -565,7 +564,6 @@ defmodule SonosWeb.CoreComponents do
   attr(:shuffle, :boolean, required: true)
   attr(:continue, :boolean, required: true)
   attr(:volume, :integer, required: true)
-
 
   # FIXME dynamically adding a border to the shuf/repeat buttons causes the buttons and volume to the right
   # to shift a pixel. but it looks so much better we are going to leave it for now.
