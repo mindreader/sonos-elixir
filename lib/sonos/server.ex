@@ -283,6 +283,8 @@ defmodule Sonos.Server do
         {:error, {:unable_to_resubscribe, res}} ->
           # this can happen if we waited too long, not a huge deal but we should try to minimize
           # this if possible. It could also happen if the device rebooted and lost our subscription.
+          # this just means next time we run a command for this service we will have to fetch it, and at
+          # that time we will create a new subscription.
           Logger.warning("unable to resubscribe to #{service_key} on #{usn} (#{room_name}): #{inspect(res)}")
 
           %State{
