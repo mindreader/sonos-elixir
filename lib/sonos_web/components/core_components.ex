@@ -567,8 +567,8 @@ defmodule SonosWeb.CoreComponents do
   attr(:volume, :integer, required: true)
 
 
-  # FIXME dynamically adding a border to the buttons causes the buttons and volume to the right to shift a pixel.
-  # but it looks so much better we are going to leave it for now.
+  # FIXME dynamically adding a border to the shuf/repeat buttons causes the buttons and volume to the right
+  # to shift a pixel. but it looks so much better we are going to leave it for now.
   def player_group(assigns) do
     ~H"""
     <div
