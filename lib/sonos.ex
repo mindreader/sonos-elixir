@@ -186,32 +186,35 @@ defmodule Sonos do
 
     res = fn -> fetch.(offset) end
 
-    {offset, res} |> Stream.unfold(fn
-        nil ->
-          nil
+    {offset, res}
+    |> Stream.unfold(fn
+      nil ->
+        nil
 
-        {offset, func} ->
-          func.() |> case do
-            {:ok, %Sonos.Api.Response{outputs: outputs}} ->
-              results = outputs[:result]
-                |> Stream.with_index(offset)
-                |> Enum.map(fn {item, index} ->
-                  item
-                  |> Map.put(:id, "track-#{index}")
-                  |> Map.put(:index, index)
-                end)
+      {offset, func} ->
+        func.()
+        |> case do
+          {:ok, %Sonos.Api.Response{outputs: outputs}} ->
+            results =
+              outputs[:result]
+              |> Stream.with_index(offset)
+              |> Enum.map(fn {item, index} ->
+                item
+                |> Map.put(:id, "track-#{index}")
+                |> Map.put(:index, index)
+              end)
 
-              next_offset = offset + per_call
+            next_offset = offset + per_call
 
-              if next_offset >= outputs[:total_matches] do
-                {results, nil}
-              else
-                next = {next_offset, fn -> fetch.(next_offset) end}
-                {results, next}
-              end
-          end
-      end)
-      |> Stream.concat()
+            if next_offset >= outputs[:total_matches] do
+              {results, nil}
+            else
+              next = {next_offset, fn -> fetch.(next_offset) end}
+              {results, next}
+            end
+        end
+    end)
+    |> Stream.concat()
   end
 
   def server_state do

@@ -591,7 +591,6 @@ defmodule SonosWeb.CoreComponents do
     """
   end
 
-
   # TODO rename id -> "group_id"
   attr(:id, :string, required: true)
   attr(:target, :any, required: true)

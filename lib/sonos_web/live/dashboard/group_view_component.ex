@@ -37,29 +37,16 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
   end
 
   @doc """
-  This means that some queue has changed, and we need to refetch the queue.
-  """
-  def service_updated_event(group_id, "Queue:1") do
-    # We only care about a small subset of services for this component, changing the queue or moving from
-    # one song to the next.
-    send_update(Dashboard.GroupViewQueueComponent,
-      id: "group-queue-#{group_id}",
-      group: group_id,
-      queue: 0
-    )
- end
-
-  @doc """
    This event main mean the device has moved to another song in the same queue, which we need to keep track of
   """
   def service_updated_event(group_id, "AVTransport:1") do
     # TODO if we had a way of knowing which group this usn was in, we could avoid even sending other devices
     # changes and avoid a few more calls.
-      send_update(Dashboard.GroupViewQueueComponent,
-        id: "group-queue-#{group_id}",
-        group: group_id,
-        queue: 0
-      )
+    send_update(Dashboard.GroupViewQueueComponent,
+      id: "group-queue-#{group_id}",
+      group: group_id,
+      queue: 0
+    )
   end
 
   def get_group(id) do
@@ -98,12 +85,14 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
       album = track_meta_data.album
       art = leader.endpoint <> track_meta_data.art
 
-      queue = [%{
-        song: "Songname",
-        artist: "Artistname",
-        album: "Albumname",
-        art: "https://picsum.photos/200/300"
-      }]
+      queue = [
+        %{
+          song: "Songname",
+          artist: "Artistname",
+          album: "Albumname",
+          art: "https://picsum.photos/200/300"
+        }
+      ]
 
       %{
         id: group.id,
@@ -253,5 +242,4 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
     |> push_patch(to: ~p"/group/#{socket.assigns.group.id}/queue/0")
     |> then(fn socket -> {:noreply, socket} end)
   end
-
 end

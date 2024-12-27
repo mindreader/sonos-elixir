@@ -171,6 +171,7 @@ defmodule Sonos.Utils do
       beg_offset < 0 && end_offset > largest_track_index ->
         # TODO FIXME
         [{0, largest_track_index}]
+
       beg_offset < 0 ->
         beg_range = {beg_offset + largest_track_index + 1, largest_track_index}
         end_range = {0, end_offset}
@@ -180,12 +181,11 @@ defmodule Sonos.Utils do
         beg_range = {beg_offset, largest_track_index}
         end_range = {0, end_offset - largest_track_index - 1}
         [beg_range, end_range]
+
       true ->
         # good
         [{beg_offset, end_offset}]
     end
-    |> Enum.map(fn {b,e} -> {_offset = b, _count = e - b + 1} end)
+    |> Enum.map(fn {b, e} -> {_offset = b, _count = e - b + 1} end)
   end
-
-
 end

@@ -29,7 +29,6 @@ defmodule SonosWeb.Dashboard do
 
   @impl true
   def mount(_params, _session, socket) do
-
     # periodic updates are to ensure subscriptions are maintained.
     self() |> Process.send_after(:periodic_update, :timer.seconds(60))
 
@@ -52,7 +51,6 @@ defmodule SonosWeb.Dashboard do
     |> then(fn socket -> {:noreply, socket} end)
   end
 
-
   @impl true
   def handle_params(%{"group" => group_id}, _url, socket) do
     socket
@@ -66,7 +64,6 @@ defmodule SonosWeb.Dashboard do
     |> assign(:live_action, :list)
     |> then(fn socket -> {:noreply, socket} end)
   end
-
 
   # TODO these stanzas could just be remote calls into their respective components allowing us to keep the logic inside of the components.
   @impl true
@@ -90,11 +87,14 @@ defmodule SonosWeb.Dashboard do
           # TODO the :periodic update event is needed to maintain a subscription to know when the queue changes, but
           # but refreshing the entire queue actually makes a request every time because it is not cached, so we could
           # just maintain the subscription and not even refresh the live view state in this case.
-          #:periodic_update ->
+          # :periodic_update ->
           #  Sonos.Server.cache_service(endpoint, {device.api}.MediaRenderer.Queue
           {:service_updated, _usn, service} ->
-            Dashboard.GroupViewComponent.service_updated_event(socket.assigns.group_id, service)
-          _ -> :ok
+            "group-queue-#{socket.assigns.group_id}"
+            |> Dashboard.GroupViewQueueComponent.service_updated_event(service)
+
+          _ ->
+            :ok
         end
 
       _ ->
