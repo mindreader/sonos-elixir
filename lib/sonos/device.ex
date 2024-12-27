@@ -10,10 +10,20 @@ defmodule Sonos.Device do
             state: nil,
             api: nil,
             max_age: nil,
-            last_seen_at: nil
+            last_seen_at: nil,
+            last_played_songs: []
 
   alias __MODULE__
   require Logger
+
+  @doc """
+  Add a song to the device's last played songs list, ensuring that duplicates are removed.
+  """
+  def song_played(%Device{} = device, song) do
+    songs = [song | device.last_played_songs |> Enum.reject(&(&1 == song))] |> Enum.take(15)
+
+    %Device{device | last_played_songs: songs}
+  end
 
   def replace_state(%Device{} = device, service, %Subscription{} = state)
       when is_binary(service) do
