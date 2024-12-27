@@ -60,7 +60,7 @@ defmodule Sonos.Device do
       "subscribing to #{service.short_service_type()} on #{device.usn |> Sonos.Api.short_usn()} (#{device.room_name})"
     )
 
-    event_endpoint = "#{event_address}/#{device.usn}/#{service.service_type()}"
+    event_endpoint = "#{event_address}/#{device.usn}/#{service.short_service_type()}"
 
     service
     |> apply(:subscribe, [device.endpoint, event_endpoint, [timeout: timeout]])

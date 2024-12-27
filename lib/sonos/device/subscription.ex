@@ -40,14 +40,13 @@ defmodule Sonos.Device.Subscription do
   def merge(%Subscription{} = state, service, vars, _opts) do
     substate =
       case service do
-        # RenderingControl:1 is broken down by instance id, for each instance merge only changed vars
+        # These services are broken down by instance (or queue) id,
+        # for each instance may only send some vars, so we merge them
         "RenderingControl:1" ->
-          vars
-          |> Enum.map(fn {instance_id, new_vars} ->
-            merged_vars = state.state |> Map.get(instance_id) |> Map.merge(new_vars)
-            {instance_id, merged_vars}
-          end)
-          |> Map.new()
+          vars |> Map.merge(state.state, fn _k, v1, v2 -> Map.merge(v1, v2) end)
+
+        "Queue:1" ->
+          vars |> Map.merge(state.state, fn _k, v1, v2 -> Map.merge(v1, v2) end)
 
         # everything else is just a simple taking the newest vars present.
         _ ->

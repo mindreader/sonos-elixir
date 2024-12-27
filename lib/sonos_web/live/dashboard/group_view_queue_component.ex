@@ -15,17 +15,20 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
   @impl true
   def mount(socket) do
     socket
-    |> assign(queue: nil, group: nil, number_of_tracks: nil, queue_position: nil, queue_index: nil)
+    |> assign(
+      queue: nil,
+      group: nil,
+      number_of_tracks: nil,
+      queue_position: nil,
+      queue_index: nil
+    )
     |> then(fn socket -> {:ok, socket} end)
   end
 
-  def service_updated_event(id, group_id, "Queue:1") do
+  def service_updated_event(id, "Queue:1") do
     # this means new songs were added to the queue perhaps, or that we've completely
     # changed the queue.
-    send_update(Dashboard.GroupViewQueueComponent,
-      id: "group-queue-#{group_id}",
-      queue_updated: true
-    )
+    send_update(__MODULE__, id: id, queue_updated: true)
   end
 
   def service_updated_event(id, "AVTransport:1") do
@@ -34,12 +37,15 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
   end
 
   # we don't care about any other events.
-  def service_updated_event(id, _), do: :ok
+  def service_updated_event(_id, _), do: :ok
 
   @impl true
   def update(%{song_changed: true}, socket) do
     group = socket.assigns.group
     leader = group.members |> hd |> Map.get(:device)
+
+    old_queue_position = socket.assigns.queue_position
+    old_number_of_tracks = socket.assigns.number_of_tracks
 
     num_tracks =
       leader
@@ -67,26 +73,41 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
         track -> track - 1
       end)
 
-    socket
-    |> assign(
-      number_of_tracks: num_tracks,
-      queue_position: queue_position
-    )
-    |> then(fn socket -> {:ok, socket} end)
+      queue_position |> dbg
+
+    {old_queue_position, old_number_of_tracks} |> dbg
+    {queue_position, num_tracks} |> dbg
+
+    socket =
+      socket
+      |> assign(:queue_position, queue_position)
+      |> assign(:number_of_tracks, num_tracks)
+
+    {:ok, _socket} =
+      if old_queue_position != queue_position || old_number_of_tracks != num_tracks do
+        update(%{queue_updated: true}, socket)
+      else
+        {:ok, socket}
+      end
   end
 
   def update(%{queue_updated: true}, socket) do
+
+    # technically we should be checking the UpdateID of the queue_index we are
+    # subscribed to and if it is unchanged, we don't have to do anything at all.
+    # but in reality no one is ever going to use a queue_index other than 0.
+    # also there's technically no function to get it, but it exists in the server cache
+    # so it is technically inspectable.
+
     queue_position = socket.assigns.queue_position
     num_tracks = socket.assigns.number_of_tracks
-
-    preferred_positions_on_either_side = 3
 
     leader = socket.assigns.group.members |> hd |> Map.get(:device)
 
     queue =
       if queue_position && num_tracks do
         Sonos.Utils.contiguous_ranges_around(queue_position, num_tracks,
-          side_count: preferred_positions_on_either_side
+          side_count: 3
         )
       else
         []
@@ -112,8 +133,6 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
   end
 
   def update(%{queue: queue_index, group: group}, socket) do
-    # The double render is kind of an issue here because this is an interactive component, and having
-    # a rendered component that is not interactive is at best confusing.
     group = group |> SonosWeb.Dashboard.GroupViewComponent.get_group()
 
     socket =
@@ -121,8 +140,10 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
       |> assign(:group, group)
       |> assign(:queue_index, queue_index)
 
+    # not sure I like the finicky reuse of the update function like this, but it
+    # does cut down on calls to the device.
     {:ok, socket} = update(%{song_changed: true}, socket)
-    {:ok, socket} = update(%{queue_updated: true}, socket)
+    {:ok, _socket} = update(%{queue_updated: true}, socket)
   end
 
   @impl true

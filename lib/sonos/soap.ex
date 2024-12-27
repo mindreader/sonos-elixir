@@ -27,7 +27,6 @@ defmodule Sonos.Soap do
       our_event_address =
         our_event_address
         |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")
-        |> String.replace("urn:schemas-upnp-org:service:", "")
 
       %Subscribe{
         events_url: events_url,

@@ -52,6 +52,7 @@ defmodule Sonos.Server do
 
             %{"QueueID" => content} ->
               content
+              |> Sonos.Utils.coerce_to_list()
               |> Enum.map(fn %{"-val" => queue_id, "#content" => data} ->
                 {queue_id, data}
               end)
