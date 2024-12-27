@@ -14,11 +14,12 @@ defmodule SonosWeb.Router do
     plug(:accepts, ["json"])
   end
 
-  scope "/", SonosWeb do
+  scope "", SonosWeb do
     pipe_through(:browser)
 
-    live("/", Dashboard)
-    live("/group/:group", Dashboard)
+    live("/", Dashboard, :list)
+    live("/group/:group", Dashboard, :group)
+    live("/group/:group/queue/:queue", Dashboard, :queue)
   end
 
   # Other scopes may use custom stacks.

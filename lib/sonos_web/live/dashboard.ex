@@ -7,67 +7,102 @@ defmodule SonosWeb.Dashboard do
   @impl true
   def render(assigns) do
     ~H"""
-    <.live_component :if={@action == :list_groups}
+    <.live_component :if={@live_action == :list}
       id="group-list"
       module={SonosWeb.Dashboard.GroupListComponent}
     />
 
-    <.live_component :if={@action == :view_group}
+    <.live_component :if={@live_action == :group}
       id={"group-view-#{@group_id}"}
       module={SonosWeb.Dashboard.GroupViewComponent}
       group={@group_id}
+    />
+
+    <.live_component :if={@live_action == :queue}
+      id={"group-queue-#{@group_id}"}
+      module={SonosWeb.Dashboard.GroupViewQueueComponent}
+      group={@group_id}
+      queue={@queue_id}
     />
     """
   end
 
   @impl true
   def mount(_params, _session, socket) do
-    self() |> Process.send_after(:periodic_update, :timer.seconds(20))
+
+    # periodic updates are to ensure subscriptions are maintained.
+    self() |> Process.send_after(:periodic_update, :timer.seconds(60))
 
     Phoenix.PubSub.subscribe(Sonos.PubSub, "Sonos.Event")
 
     socket
-    |> assign(:action, :list_groups)
     |> assign(:group_id, nil)
+    |> assign(:queue_id, nil)
     |> then(fn socket -> {:ok, socket} end)
   end
 
   @impl true
+  def handle_params(%{"group" => group_id, "queue" => queue_index}, _url, socket) do
+    queue_index = queue_index |> String.to_integer()
+
+    socket
+    |> assign(:live_action, :queue)
+    |> assign(:group_id, group_id)
+    |> assign(:queue_id, queue_index)
+    |> then(fn socket -> {:noreply, socket} end)
+  end
+
+
+  @impl true
   def handle_params(%{"group" => group_id}, _url, socket) do
     socket
-    |> assign(:action, :view_group)
+    |> assign(:live_action, :group)
     |> assign(:group_id, group_id)
     |> then(fn socket -> {:noreply, socket} end)
   end
 
   def handle_params(_params, _url, socket) do
-    socket |> assign(:action, :list_groups) |> then(fn socket -> {:noreply, socket} end)
+    socket
+    |> assign(:live_action, :list)
+    |> then(fn socket -> {:noreply, socket} end)
   end
 
-  # TODO FIXME for as long as this live view is open we need to continually renew subscriptions for the
-  # open live component. They cannot be allowed to ever expire.
 
+  # TODO these stanzas could just be remote calls into their respective components allowing us to keep the logic inside of the components.
   @impl true
   def handle_info(event, socket) do
     # any event from Sonos.Server over pubsub or any periodic event, call the primary refresh
     # for the currently loaded component, which will cause subscriptions to the sonos devices
     # that that component relies on to be kept up to date, while all others eventually expire.
-    case socket.assigns[:action] do
-      :list_groups ->
+    case socket.assigns[:live_action] do
+      :list ->
+        # TODO both of these stanzas only care about certain types of events, put them into their components.
         send_update(Dashboard.GroupListComponent, id: "group-list")
 
-      :view_group ->
+      :group ->
         send_update(Dashboard.GroupViewComponent,
           id: "group-view-#{socket.assigns.group_id}",
           group: socket.assigns.group_id
         )
+
+      :queue ->
+        case event do
+          # TODO the :periodic update event is needed to maintain a subscription to know when the queue changes, but
+          # but refreshing the entire queue actually makes a request every time because it is not cached, so we could
+          # just maintain the subscription and not even refresh the live view state in this case.
+          #:periodic_update ->
+          #  Sonos.Server.cache_service(endpoint, {device.api}.MediaRenderer.Queue
+          {:service_updated, _usn, service} ->
+            Dashboard.GroupViewComponent.service_updated_event(socket.assigns.group_id, service)
+          _ -> :ok
+        end
 
       _ ->
         :ok
     end
 
     if event == :periodic_update do
-      self() |> Process.send_after(:periodic_update, :timer.seconds(20))
+      self() |> Process.send_after(:periodic_update, :timer.seconds(60))
     end
 
     {:noreply, socket}

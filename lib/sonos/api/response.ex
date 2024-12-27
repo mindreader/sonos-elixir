@@ -3,6 +3,8 @@ defmodule Sonos.Api.Response do
   alias Sonos.Utils
   defstruct command: nil, outputs: nil, via: nil
 
+  # also of note
+  #   Sonos.Api.Play1.MediaRenderer.AVTransport.create_saved_queue
   def new(command, output, output_types, opts \\ []) do
     via = opts |> Keyword.get(:via, nil)
 
@@ -102,7 +104,8 @@ defmodule Sonos.Api.Response do
       json["DIDL-Lite"]["item"]
       |> Sonos.Utils.coerce_to_list()
       |> Enum.map(fn item ->
-        queue_id = item["-id"]
+        # this is not useful?
+        # queue_id = item["-id"]
 
         item = item["#content"]
         res = item["res"]
@@ -114,7 +117,6 @@ defmodule Sonos.Api.Response do
           song: item["dc:title"],
           album: item["upnp:album"],
           art: item["upnp:albumArtURI"],
-          queue_id: queue_id,
           track_duration: track_duration
         }
       end)

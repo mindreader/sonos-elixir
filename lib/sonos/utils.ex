@@ -156,4 +156,36 @@ defmodule Sonos.Utils do
         end
     end
   end
+
+  @doc """
+  Get a list of contiguous ranges around a given position, wrapping around if necessary.
+  """
+  def contiguous_ranges_around(queue_position, number_of_tracks, opts \\ []) do
+    largest_track_index = number_of_tracks - 1
+    preferred_positions_on_either_side = opts[:side_count] || 2
+
+    beg_offset = queue_position - preferred_positions_on_either_side
+    end_offset = queue_position + preferred_positions_on_either_side
+
+    cond do
+      beg_offset < 0 && end_offset > largest_track_index ->
+        # TODO FIXME
+        [{0, largest_track_index}]
+      beg_offset < 0 ->
+        beg_range = {beg_offset + largest_track_index + 1, largest_track_index}
+        end_range = {0, end_offset}
+        [beg_range, end_range]
+
+      end_offset > largest_track_index ->
+        beg_range = {beg_offset, largest_track_index}
+        end_range = {0, end_offset - largest_track_index - 1}
+        [beg_range, end_range]
+      true ->
+        # good
+        [{beg_offset, end_offset}]
+    end
+    |> Enum.map(fn {b,e} -> {_offset = b, _count = e - b + 1} end)
+  end
+
+
 end

@@ -33,7 +33,6 @@ defmodule Sonos.Api do
   Feel free to explore the options in the repl under this module, as functionality available for each
   model of device differs.
   """
-
   def short_usn(usn) do
     usn
     |> String.replace("::urn:schemas-upnp-org:device:ZonePlayer:1", "")

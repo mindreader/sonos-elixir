@@ -142,6 +142,8 @@ defmodule Sonos.Device do
   end
 
   def resubscribe_failed(%Device{} = device, service) when is_binary(service) do
+    # TODO FIXME I've witnessed subscriptions failing but being stale due to not being removed from the device state.
+    IO.puts("resubscribe_failed #{service}")
     device_state = device.state |> Map.delete(service)
     %Device{device | state: device_state}
   end

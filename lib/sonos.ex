@@ -164,12 +164,24 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0])
   end
 
+  def get_media_info(%Sonos.Device{} = device) do
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_media_info, [0])
+  end
+
+  def get_position_info(%Sonos.Device{} = device) do
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0])
+  end
+
+  @doc """
+  Stream interface to the queue of a device.
+  """
   def stream_queue(%Sonos.Device{} = device, queue_id, opts \\ []) do
-    count = opts[:count] || 10
+    # amount of items to fetch per trip to the device.
+    per_call = opts[:per_call] || 10
     offset = opts[:offset] || 0
 
     fetch = fn offset ->
-      device |> Sonos.Device.call(MediaRenderer.Queue, :browse, [queue_id, offset, count])
+      device |> Sonos.Device.call(MediaRenderer.Queue, :browse, [queue_id, offset, per_call])
     end
 
     res = fn -> fetch.(offset) end
@@ -181,11 +193,21 @@ defmodule Sonos do
         {offset, func} ->
           func.() |> case do
             {:ok, %Sonos.Api.Response{outputs: outputs}} ->
-              if (offset + 1) * count >= outputs[:total_matches] do
-                {outputs[:result], nil}
+              results = outputs[:result]
+                |> Stream.with_index(offset)
+                |> Enum.map(fn {item, index} ->
+                  item
+                  |> Map.put(:id, "track-#{index}")
+                  |> Map.put(:index, index)
+                end)
+
+              next_offset = offset + per_call
+
+              if next_offset >= outputs[:total_matches] do
+                {results, nil}
               else
-                next = {offset + 1, fn -> fetch.(offset + 1) end}
-                {outputs[:result], next}
+                next = {next_offset, fn -> fetch.(next_offset) end}
+                {results, next}
               end
           end
       end)

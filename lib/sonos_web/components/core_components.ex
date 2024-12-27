@@ -455,6 +455,9 @@ defmodule SonosWeb.CoreComponents do
         <:col :let={user} label="username"><%= user.username %></:col>
       </.table>
   """
+
+  def false_fun(_), do: false
+
   attr(:id, :string, required: true)
   attr(:rows, :list, required: true)
   attr(:row_id, :any, default: nil, doc: "the function for generating the row id")
@@ -465,8 +468,14 @@ defmodule SonosWeb.CoreComponents do
     doc: "the function for mapping each row before calling the :col and :action slots"
   )
 
+  attr(:row_highlight, :any,
+    default: &__MODULE__.false_fun/1,
+    doc: "the function for specially highlighting some rows"
+  )
+
   slot :col, required: true do
     attr(:label, :string)
+    attr(:class, :string)
   end
 
   slot(:action, doc: "the slot for showing user actions in the last table column")
@@ -493,22 +502,22 @@ defmodule SonosWeb.CoreComponents do
           phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
           class="relative divide-y divide-zinc-100 border-t border-zinc-200 text-sm leading-6 text-zinc-700"
         >
-          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-zinc-50">
+          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-slate-500">
             <td
-              :for={{col, i} <- Enum.with_index(@col)}
+              :for={{col, c} <- Enum.with_index(@col)}
               phx-click={@row_click && @row_click.(row)}
               class={["relative p-0", @row_click && "hover:cursor-pointer"]}
             >
               <div class="block py-4 pr-6">
-                <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-zinc-50 sm:rounded-l-xl" />
-                <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
+                <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-slate-300 sm:rounded-l-xl" />
+                <span class={["relative", c == 0 && "font-semibold", @row_highlight.(row) && "text-red-700" || "text-zinc-900"]}>
                   <%= render_slot(col, @row_item.(row)) %>
                 </span>
               </div>
             </td>
             <td :if={@action != []} class="relative w-14 p-0">
               <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
-                <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-zinc-50 sm:rounded-r-xl" />
+                <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-slate-400 sm:rounded-r-xl" />
                 <span
                   :for={action <- @action}
                   class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
@@ -555,6 +564,33 @@ defmodule SonosWeb.CoreComponents do
     </div>
     """
   end
+
+  attr(:target, :any, required: true)
+  attr(:queue, :list, required: true)
+
+  # TODO mark current song!
+
+  def player_queue(assigns) do
+    ~H"""
+    <.table
+        id="queue"
+        rows={@queue}
+        row_id={&elem(&1, 0)}
+        row_item={&elem(&1, 1)}
+        row_click={fn {id, _} ->
+          JS.push("view-song", target: @target, value: %{queue_id: id})
+        end}
+        row_highlight={fn {_, entry} -> entry.current end}
+    >
+      <:col :let={entry} label="Index"><%= entry.index %></:col>
+      <:col :let={entry} label="Song"><%= entry.song %></:col>
+      <:col :let={entry} label="Artist"><%= entry.artist %></:col>
+      <:col :let={entry} label="Album"><%= entry.album %></:col>
+      <:col :let={entry} label="Duration"><%= entry.track_duration %></:col>
+    </.table>
+    """
+  end
+
 
   # TODO rename id -> "group_id"
   attr(:id, :string, required: true)

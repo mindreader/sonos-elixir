@@ -108,7 +108,7 @@ defmodule Sonos.Server do
         %Device{} = device |> Device.merge_state(service, vars)
       end)
 
-    Phoenix.PubSub.broadcast(Sonos.PubSub, "Sonos.Event", {:updated, service})
+    Phoenix.PubSub.broadcast(Sonos.PubSub, "Sonos.Event", {:service_updated, short_usn, service})
 
     state = %State{state | devices: devices}
 
@@ -291,6 +291,9 @@ defmodule Sonos.Server do
           Logger.warning(
             "unable to resubscribe to #{service_key} on #{usn} (#{room_name}): #{inspect(res)}"
           )
+
+          # FIXME TODO this usn may need to be truncated
+          IO.puts("removing usn #{usn} from device list due to failed subscribe")
 
           %State{
             state
