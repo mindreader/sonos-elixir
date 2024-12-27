@@ -85,6 +85,7 @@ defmodule SonosWeb do
       import Phoenix.HTML
       # Core UI components and translation
       import SonosWeb.CoreComponents
+      import SonosWeb.PlayerComponents
       import SonosWeb.Gettext
 
       # Shortcut for generating JS commands

@@ -23,6 +23,7 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         track_duration={@group.track_duration}
         art={@group.art}
       />
+
       <.player_group
         id={@group.id}
         target={@myself}
@@ -241,5 +242,13 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
     socket
     |> push_patch(to: ~p"/group/#{socket.assigns.group.id}/queue/0")
     |> then(fn socket -> {:noreply, socket} end)
+  end
+
+  def handle_event("view-group", _params, socket) do
+    IO.puts("TODO REMOVE THIS EVENT")
+    # TODO when we have a more specific group view defined, we can remove this as there
+    # will no longer be a top level phx-click back to this page to ignore.
+
+    {:noreply, socket}
   end
 end

@@ -73,11 +73,6 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
         track -> track - 1
       end)
 
-      queue_position |> dbg
-
-    {old_queue_position, old_number_of_tracks} |> dbg
-    {queue_position, num_tracks} |> dbg
-
     socket =
       socket
       |> assign(:queue_position, queue_position)
@@ -92,7 +87,6 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
   end
 
   def update(%{queue_updated: true}, socket) do
-
     # technically we should be checking the UpdateID of the queue_index we are
     # subscribed to and if it is unchanged, we don't have to do anything at all.
     # but in reality no one is ever going to use a queue_index other than 0.
@@ -141,9 +135,9 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
       |> assign(:queue_index, queue_index)
 
     # not sure I like the finicky reuse of the update function like this, but it
-    # does cut down on calls to the device.
+    # does cut down on calls to the device. A song update implies a queue update at
+    # this time because we need to know where in the queue your current song is.
     {:ok, socket} = update(%{song_changed: true}, socket)
-    {:ok, _socket} = update(%{queue_updated: true}, socket)
   end
 
   @impl true
