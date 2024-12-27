@@ -300,6 +300,8 @@ defmodule Sonos.Server do
     state =
       case res do
         {:error, {:unable_to_resubscribe, res}} ->
+          usn = usn |> Sonos.Api.short_usn()
+
           # this can happen if we waited too long, not a huge deal but we should try to minimize
           # this if possible. It could also happen if the device rebooted and lost our subscription.
           # this just means next time we run a command for this service we will have to fetch it, and at
@@ -307,9 +309,6 @@ defmodule Sonos.Server do
           Logger.warning(
             "unable to resubscribe to #{service_key} on #{usn} (#{room_name}): #{inspect(res)}"
           )
-
-          # FIXME TODO this usn may need to be truncated
-          IO.puts("removing usn #{usn} from device list due to failed subscribe")
 
           %State{
             state

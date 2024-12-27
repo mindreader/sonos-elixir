@@ -137,7 +137,7 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
     # not sure I like the finicky reuse of the update function like this, but it
     # does cut down on calls to the device. A song update implies a queue update at
     # this time because we need to know where in the queue your current song is.
-    {:ok, socket} = update(%{song_changed: true}, socket)
+    {:ok, _socket} = update(%{song_changed: true}, socket)
   end
 
   @impl true
