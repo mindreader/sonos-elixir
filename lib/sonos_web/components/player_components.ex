@@ -45,11 +45,13 @@ defmodule SonosWeb.PlayerComponents do
   attr(:track_duration, :string)
   attr(:art, :string)
 
+  # TODO FIXME if the song name is too long it will overflow the container. truncate doesn't
+  # seem to work...
   def track_info(assigns) do
     ~H"""
     <div class="bg-slate-500 text-white rounded-lg p-2 px-4 border border-slate-600">
       <img src={@art} class="m-2 mx-auto mb-0"/>
-      <div class="grid auto-cols-min text-nowrap gap-x-2">
+      <div class="grid auto-cols-min gap-x-2 text-nowrap tracking-tight">
           <.icon name="hero-musical-note" class="size-4 row-start-1"/>
           <div class="text-sm col-start-2">
             <%= @song %> - <%= @album %>
@@ -146,7 +148,7 @@ defmodule SonosWeb.PlayerComponents do
         </div>
 
         <div class="flex justify-center w-full px-4">
-          <.icon name="hero-speaker-wave" class="size-4 mr-2  my-auto"/>
+          <.icon name="hero-speaker-wave" class="size-4 mr-2 my-auto"/>
           <form id="volume-slider-form" phx-target={@target} phx-value-group={@id} class="w-11/12">
             <input
               id={["volume-slider", @id]}
@@ -177,6 +179,9 @@ defmodule SonosWeb.PlayerComponents do
 
   # FIXME dynamically adding a border to the shuf/repeat buttons causes the buttons and volume to the right
   # to shift a pixel. but it looks so much better we are going to leave it for now.
+
+  # TODO it might actually be viable to render a little "1" on top of the repeat icon in the corner
+  # to indicate a repeat once mode so I don't have to make a separate icon for it.
   def player_group(assigns) do
     ~H"""
     <div
