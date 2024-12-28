@@ -16,13 +16,10 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         art={@group.art}
       />
 
-       <div
-        class="bg-slate-500 text-white m-2 p-2 rounded-lg border border-slate-600"
-        phx-click="view-queue"
-        phx-target={@myself}
-      >
-        View Queue
-      </div>
+      <.song_navigation
+        target={@myself}
+        group={@group}
+      />
 
       <.dedicated_player_group
         id={@group.id}

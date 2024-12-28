@@ -36,11 +36,67 @@ defmodule SonosWeb.PlayerComponents do
     """
   end
 
+  # TODO this doesn't technically need to be identified by group, because there will only ever be
+  # one on screen, that said, it could be made to work that way if ever needed.
+  attr(:target, :any, required: true)
+  attr(:song, :string)
+  attr(:artist, :string)
+  attr(:album, :string)
+  attr(:track_duration, :string)
+  attr(:art, :string)
+
+  def track_info(assigns) do
+    ~H"""
+    <div class="bg-slate-500 text-white rounded-lg p-2 px-4 border border-slate-600">
+      <img src={@art} class="m-2 mx-auto mb-0"/>
+      <div class="grid auto-cols-min text-nowrap gap-x-2">
+          <.icon name="hero-musical-note" class="size-4 row-start-1"/>
+          <div class="text-sm col-start-2">
+            <%= @song %> - <%= @album %>
+          </div>
+          <.icon name="hero-at-symbol" class="size-4 row-start-2 col-start-1"/>
+          <div class="text-sm">
+            <%= @artist %>
+          </div>
+          <div class="text-xs row-start-3 col-start-2">
+            <%= @track_duration %>
+          </div>
+     </div>
+    </div>
+    """
+  end
+
+
+  def song_navigation(assigns) do
+    ~H"""
+    <div class="flex flex-row p-2">
+      <div
+        class="text-white p-1 text-xs rounded-lg mx-1 border-2 border-slate-500"
+        phx-click="view-queue"
+        phx-target={@target}
+      >
+        View Queue
+      </div>
+        <div
+          class="text-white p-1 text-xs rounded-lg mx-1 border-2 border-slate-500"
+          phx-click="view-queue"
+          phx-target={@target}
+        >
+          Recently Played
+        </div>
+
+
+    </div>
+    """
+  end
+
   def dedicated_player_group(assigns) do
     ~H"""
     <div
-      class="bg-slate-500 text-white m-2 p-2 rounded-lg border border-slate-600"
+      class="bg-slate-500 text-white p-2 rounded-lg border border-slate-600"
     >
+
+
       <div>
         <div class="flex flex-nowrap justify-center gap-2 mx-2 leading-none">
 

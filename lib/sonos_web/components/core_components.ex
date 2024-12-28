@@ -533,38 +533,6 @@ defmodule SonosWeb.CoreComponents do
     """
   end
 
-  # TODO this doesn't technically need to be identified by group, because there will only ever be
-  # one on screen, that said, it could be made to work that way if ever needed.
-  attr(:target, :any, required: true)
-  attr(:song, :string)
-  attr(:artist, :string)
-  attr(:album, :string)
-  attr(:track_duration, :string)
-  attr(:art, :string)
-
-  def track_info(assigns) do
-    ~H"""
-    <div class="bg-slate-500 text-white m-2 rounded-lg p-2 px-4 mt-0 border border-slate-600">
-      <img src={@art} class="m-2 mx-auto mb-0"/>
-      <div class="grid auto-cols-min text-nowrap gap-x-2">
-          <.icon name="hero-musical-note" class="size-4 row-start-1"/>
-          <div class="text-sm col-start-2">
-            <%= @song %> - <%= @album %>
-          </div>
-          <.icon name="hero-at-symbol" class="size-4 row-start-2 col-start-1"/>
-          <div class="text-sm">
-            <%= @artist %>
-          </div>
-          <div class="text-xs row-start-3 col-start-2">
-            <%= @track_duration %>
-          </div>
-
-
-     </div>
-    </div>
-    """
-  end
-
   @doc """
   Renders a data list.
 
