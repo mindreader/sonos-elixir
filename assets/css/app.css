@@ -19,7 +19,7 @@ input[type="range"] {
   }
 
 [dir="rtl"] input[type="range"] {
-    background: #ff4500;
+    background: #666;
     background-image: linear-gradient(#fff, #fff);
     background-size: 30% 100%;
     background-repeat: no-repeat;
@@ -31,7 +31,7 @@ input[type="range"] {
     height: 12px;
     width: 12px;
     border-radius: 50%;
-    background: #ff4500;
+    background: #666;
     cursor: ew-resize;
     box-shadow: 0 0 2px 0 #555;
     transition: background .1s ease-in-out;
@@ -53,7 +53,7 @@ input[type="range"] {
     height: 12px;
     width: 12px;
     border-radius: 50%;
-    background: #ff4500;
+    background: #666;
     cursor: ew-resize;
     box-shadow: 0 0 2px 0 #555;
     transition: background .1s ease-in-out;
