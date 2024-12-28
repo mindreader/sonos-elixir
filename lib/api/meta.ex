@@ -425,18 +425,26 @@ defmodule Sonos.Api.Meta do
     cache_fetch =
       if action.name |> to_string |> String.starts_with?("get_") do
         quote do
-          case Sonos.Server.cache_fetch(
-                 unquote(endpoint),
-                 unquote(service_module),
-                 unquote(inputs),
-                 unquote(action.outputs |> Macro.escape())
-               ) do
+          if opts[:nocache] do
+            # ensure that though we are going direct to device, we are still ensuring
+            # that we have a cache entry for this service.
+            Sonos.Server.cache_service(unquote(endpoint), unquote(service_module))
+            {:error, :nocache}
+          else
+            Sonos.Server.cache_fetch(
+              unquote(endpoint),
+              unquote(service_module),
+              unquote(inputs),
+              unquote(action.outputs |> Macro.escape())
+            )
+          end
+          |> then(fn
             {:ok, _} = res ->
               {:cache, res}
 
             {:error, _} ->
               unquote(soap_fetch)
-          end
+          end)
         end
       else
         quote do
@@ -542,8 +550,11 @@ defmodule Sonos.Api.Meta do
       #{unquote(output_docs)}
 
       #{unquote(remarks)}
+
+      Control options:
+        * `nocache`: Do not use the cache for this call.
       """
-      def unquote(action.name)(unquote_splicing(params)) when is_binary(unquote(endpoint)) do
+      def unquote(action.name)(unquote_splicing(params),opts \\ []) when is_binary(unquote(endpoint)) do
         unquote(validation)
       end
     end

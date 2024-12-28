@@ -6,7 +6,7 @@ defmodule SonosWeb.Dashboard.GroupListComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div id="group-list">
+    <div id="group-list" class="changeable-volume">
      <div :for={group <- @groups |> Map.values()}>
        <.player_group
          id={group.id}

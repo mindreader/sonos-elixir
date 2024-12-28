@@ -6,16 +6,8 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div id="group-view">
-      <div
-        class="bg-slate-500 text-white m-2 p-2 rounded-lg border border-slate-600"
-        phx-click="view-queue"
-        phx-target={@myself}
-      >
-        View Queue
-      </div>
-
-      <.track_info
+    <div id="group-view" class="changeable-volume">
+     <.track_info
         target={@myself}
         artist={@group.artist}
         album={@group.album}
@@ -24,7 +16,15 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         art={@group.art}
       />
 
-      <.player_group
+       <div
+        class="bg-slate-500 text-white m-2 p-2 rounded-lg border border-slate-600"
+        phx-click="view-queue"
+        phx-target={@myself}
+      >
+        View Queue
+      </div>
+
+      <.dedicated_player_group
         id={@group.id}
         target={@myself}
         name={@group.name}
@@ -64,6 +64,7 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
 
       playing = leader |> Sonos.is_playing?()
       play_state = leader |> Sonos.get_play_state()
+
 
       name = leader.room_name
 

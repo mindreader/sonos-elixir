@@ -59,7 +59,7 @@ defmodule Sonos.Device do
 
   def call(%Sonos.Device{} = device, service, function, inputs)
       when is_atom(service) and is_atom(function) do
-    Module.concat([device.api, service]) |> apply(function, [device.endpoint | inputs])
+    Module.concat([device.api, service]) |> apply(function, [device.endpoint | inputs ])
   end
 
   def subscribe(%Sonos.Device{} = device, service, event_address, opts \\ [])

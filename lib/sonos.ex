@@ -168,8 +168,12 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_media_info, [0])
   end
 
-  def get_position_info(%Sonos.Device{} = device) do
-    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0])
+  def get_position_info(%Sonos.Device{} = device, opts \\ []) do
+    # this still subscribes to events and caches, but gets the position info directly from the device
+    # circumventing the cache, which is the only way to get current track position info.
+    nocache = Keyword.get(opts, :nocache, false)
+
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0, [nocache: nocache]])
   end
 
   @doc """

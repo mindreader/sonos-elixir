@@ -36,6 +36,80 @@ defmodule SonosWeb.PlayerComponents do
     """
   end
 
+  def dedicated_player_group(assigns) do
+    ~H"""
+    <div
+      class="bg-slate-500 text-white m-2 p-2 rounded-lg border border-slate-600"
+    >
+      <div>
+        <div class="flex flex-nowrap justify-center gap-2 mx-2 leading-none">
+
+          <div
+            phx-click="shuffle"
+            phx-target={@target}
+            phx-value-group={@id}
+            class={["my-auto", @shuffle && "text-slate-500 bg-white rounded-full border-2 border-slate-400 shadow-sm"]}
+          >
+            <.icon name="icon-shuffle" class="size-6"/>
+          </div>
+
+          <div
+            phx-click="previous"
+            phx-target={@target}
+            phx-value-group={@id}
+            class="my-auto"
+          >
+            <.icon name="hero-backward" class="size-14"/>
+          </div>
+
+          <div :if={!@playing} phx-click="play" phx-target={@target} phx-value-group={@id}>
+            <.icon name="hero-play-solid" class="size-20" />
+          </div>
+
+          <div :if={@playing} phx-click="pause" phx-target={@target} phx-value-group={@id}>
+            <.icon name="hero-pause-solid" class="size-20" />
+          </div>
+
+          <div
+            phx-click="next"
+            phx-target={@target}
+            phx-value-group={@id}
+            class="my-auto"
+          >
+            <.icon name="hero-forward" class="size-14"/>
+          </div>
+
+          <div
+            phx-click="continue"
+            phx-target={@target}
+            phx-value-group={@id}
+            class={["my-auto", @continue && "text-slate-500 bg-white rounded-full border-2 border-slate-400 shadow-sm"]}
+          >
+            <.icon name="hero-arrow-path-mini" class="size-6"/>
+          </div>
+        </div>
+
+        <div class="flex justify-center w-full px-4">
+          <.icon name="hero-speaker-wave" class="size-4 mr-2  my-auto"/>
+          <form id="volume-slider-form" phx-target={@target} phx-value-group={@id} class="w-11/12">
+            <input
+              id={["volume-slider", @id]}
+              type="range"
+              name="volume"
+              min="0"
+              max="100"
+              value={@volume}
+              class="w-full"
+              phx-hook="volume-change"
+            />
+          </form>
+          <span id="volume-slider-number" class="ml-2">{@volume}</span>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
   # TODO rename id -> "group_id"
   attr(:id, :string, required: true)
   attr(:target, :any, required: true)
@@ -59,64 +133,64 @@ defmodule SonosWeb.PlayerComponents do
         <%= @name %>
       </div>
 
-        <div class="flex flex-nowrap gap-2 mx-2 leading-none">
-          <div
-            phx-click="shuffle"
-            phx-target={@target}
-            phx-value-group={@id}
-            class={["my-auto", @shuffle && "text-slate-500 bg-white rounded-full border border-slate-400 shadow-sm"]}
-          >
-            <.icon name="icon-shuffle" class="size-6"/>
-          </div>
-
-          <div
-            phx-click="previous"
-            phx-target={@target}
-            phx-value-group={@id}
-            class="my-auto"
-          >
-            <.icon name="hero-backward" class="size-6"/>
-          </div>
-
-          <div :if={!@playing} phx-click="play" phx-target={@target} phx-value-group={@id}>
-            <.icon name="hero-play-solid" class="size-10" />
-          </div>
-
-          <div :if={@playing} phx-click="pause" phx-target={@target} phx-value-group={@id}>
-            <.icon name="hero-pause-solid" class="size-10" />
-          </div>
-
-          <div
-            phx-click="next"
-            phx-target={@target}
-            phx-value-group={@id}
-            class="my-auto"
-          >
-            <.icon name="hero-forward" class="size-6"/>
-          </div>
-
-          <div
-            phx-click="continue"
-            phx-target={@target}
-            phx-value-group={@id}
-            class={["my-auto", @continue && "text-slate-500 bg-white rounded-full border border-slate-400 shadow-sm"]}
-          >
-            <.icon name="hero-arrow-path-mini" class="size-6"/>
-          </div>
-
-          <form phx-target={@target} phx-value-group={@id}>
-            <input
-              type="range"
-              name="volume"
-              min="0"
-              max="100"
-              value={@volume}
-              class="ml-2 w-full"
-              phx-change="volume"
-              phx-click={JS.dispatch("phx:click-ignore")}
-          />
-          </form>
+      <div class="flex flex-nowrap gap-2 mx-2 leading-none">
+        <div
+          phx-click="shuffle"
+          phx-target={@target}
+          phx-value-group={@id}
+          class={["my-auto", @shuffle && "text-slate-500 bg-white rounded-full border border-slate-400 shadow-sm"]}
+        >
+          <.icon name="icon-shuffle" class="size-6"/>
         </div>
+
+        <div
+          phx-click="previous"
+          phx-target={@target}
+          phx-value-group={@id}
+          class="my-auto"
+        >
+          <.icon name="hero-backward" class="size-6"/>
+        </div>
+
+        <div :if={!@playing} phx-click="play" phx-target={@target} phx-value-group={@id}>
+          <.icon name="hero-play-solid" class="size-10" />
+        </div>
+
+        <div :if={@playing} phx-click="pause" phx-target={@target} phx-value-group={@id}>
+          <.icon name="hero-pause-solid" class="size-10" />
+        </div>
+
+        <div
+          phx-click="next"
+          phx-target={@target}
+          phx-value-group={@id}
+          class="my-auto"
+        >
+          <.icon name="hero-forward" class="size-6"/>
+        </div>
+
+        <div
+          phx-click="continue"
+          phx-target={@target}
+          phx-value-group={@id}
+          class={["my-auto", @continue && "text-slate-500 bg-white rounded-full border border-slate-400 shadow-sm"]}
+        >
+          <.icon name="hero-arrow-path-mini" class="size-6"/>
+        </div>
+
+        <form phx-target={@target} phx-value-group={@id}>
+          <input
+            type="range"
+            name="volume"
+            min="0"
+            max="100"
+            value={@volume}
+            class="ml-2 w-full"
+            phx-change="volume"
+            phx-click={JS.dispatch("phx:click-ignore")}
+        />
+        </form>
+      </div>
 
     </div>
     """
