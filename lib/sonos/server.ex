@@ -6,7 +6,7 @@ defmodule Sonos.Server do
 
   require Logger
 
-  @default_subscribe_timeout 60 * 5
+  @default_subscribe_timeout 60 * 10
 
   def start_link(_args) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
