@@ -157,6 +157,33 @@ defmodule Sonos.Utils do
     end
   end
 
+  def time_to_sec(time) do
+    time
+    |> String.split(":")
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.with_index()
+    |> Enum.reduce(0, fn {val, idx}, acc ->
+      multiplier = case idx do
+        0 -> 3600  # hours
+        1 -> 60    # minutes
+        2 -> 1     # seconds
+      end
+      acc + val * multiplier
+    end)
+  end
+
+  def sec_to_time(sec) do
+    hours = div(sec, 3600)
+    remaining = rem(sec, 3600)
+    minutes = div(remaining, 60)
+    seconds = rem(remaining, 60)
+
+    [hours, minutes, seconds]
+    |> Enum.map(&Integer.to_string/1)
+    |> Enum.map(&String.pad_leading(&1, 2, "0"))
+    |> Enum.join(":")
+  end
+
   @doc """
   Get a list of contiguous ranges around a given position, wrapping around if necessary.
   """
