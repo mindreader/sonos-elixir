@@ -12,6 +12,7 @@ defmodule Sonos.Supervisor do
     [
       {Task.Supervisor, name: Sonos.Tasks},
       {Phoenix.PubSub, name: Sonos.PubSub},
+      Sonos.Repo,
       Sonos.SSDP,
       Sonos.Server,
       SonosWeb.Endpoint

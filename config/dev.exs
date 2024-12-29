@@ -1,14 +1,10 @@
 import Config
 
-# Configure your database
-# config :sonos_elixir, Sonos.Repo,
-#   username: "postgres",
-#   password: "davidm",
-#   hostname: "localhost",
-#   database: "ana_dev",
-#   stacktrace: true,
-#   show_sensitive_data_on_connection_error: true,
-#   pool_size: 10
+config :sonos_elixir, Sonos.Repo,
+   database: "priv/db.sqlite3",
+   stacktrace: true,
+   show_sensitive_data_on_connection_error: true,
+   pool_size: 3
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

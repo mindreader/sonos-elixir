@@ -48,19 +48,19 @@ defmodule SonosElixir.MixProject do
       {:elixir_xml_to_map, "~> 3.1"},
       {:xml_builder, "~> 2.3.0"},
       {:timex, "~> 3.7"},
-      {:httpoison, "~> 2.2.0"}
+      {:httpoison, "~> 2.2.0"},
+      {:ecto, "~> 3.12.5"},
+      {:ecto_sqlite3, "0.18.0"}
       # {:exsync, "~>0.4.1", only: :dev},
       # {:big_brother_ex, "~> 0.1", only: :dev},
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
     ]
   end
 
   defp aliases do
     [
       setup: ["deps.get", "assets.setup", "assets.build"],
-      # "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      # "ecto.reset": ["ecto.drop", "ecto.setup"],
+      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
       # test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["tailwind sonos_elixir", "esbuild sonos_elixir"],
