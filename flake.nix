@@ -27,7 +27,7 @@
     devShells.x86_64-linux.default = pkgs.mkShell {
 
       name = "ts-shell";
-      packages = with pkgs; [ elixir elixir-ls inotify-tools ];
+      packages = with pkgs; [ elixir elixir-ls inotify-tools sqlite ];
     };
   };
 }
