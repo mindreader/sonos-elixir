@@ -30,7 +30,7 @@ defmodule Sonos.Track do
 
     def parse(xml) do
       xml
-      |> XmlToMap.naive_map()
+      |> Sonos.Utils.naive_map()
       |> then(&new/1)
     end
 
@@ -53,31 +53,39 @@ defmodule Sonos.Track do
             parent_id: nil,
             restricted: nil
 
+
     @doc """
     Useful when you know there will only ever be one track, such as the currently playing track,
     or the next one in the queue.
     """
     def parse_single(xml) do
       xml
-      |> XmlToMap.naive_map()
+      |> Sonos.Utils.naive_map()
       |> then(fn json ->
-        json["DIDL-Lite"]["item"]
+        get_in(json, ["DIDL-Lite", "item"])
         |> then(&new/1)
       end)
     end
 
     @doc """
-    Useful when you know there will be multiple tracks, such as the queue, or in a playlist.
+    Useful when you know there will be multiple tracks, such as the queue, or in a playlist. If there happens
+    to be only a single track, we can't detect it from the xml only so this will coerce it into a list
+    with a single item.
     """
     def parse_list(xml) do
-      xml |> XmlToMap.naive_map()
+      xml
+      |> Sonos.Utils.naive_map()
       |> then(fn json ->
-        json["DIDL-Lite"]["item"]
+        get_in(json, ["DIDL-Lite", "item"])
         |> Sonos.Utils.coerce_to_list()
         |> Enum.map(&new/1)
       end)
     end
 
+    def new(nil), do: nil
+    def new(xs) when is_list(xs) do
+      raise "expected a single track, got a list of tracks, use parse_list instead"
+    end
     def new(obj) when is_map(obj) do
       %Sonos.Track{
         content: Content.new(obj["#content"]["res"]),
@@ -118,5 +126,22 @@ defmodule Sonos.Track do
           track.class && XmlBuilder.element(:"upnp:class", track.class)
         ] |> Enum.filter(& &1) )
       end))
+    end
+
+
+    def persist(%Sonos.Track{} = track) do
+      %{
+        url: track.content.url,
+        protocol_info: track.content.protocol_info,
+        duration: track.content.duration |> Sonos.Utils.time_to_sec(),
+        creator: track.creator,
+        album: track.album,
+        title: track.title,
+        art: track.art,
+        class: track.class,
+        item_id: track.id,
+        parent_id: track.parent_id,
+        restricted: track.restricted
+      } |> Sonos.Schema.Track.replace_track()
     end
 end

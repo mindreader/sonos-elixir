@@ -157,9 +157,10 @@ defmodule Sonos.Utils do
     end
   end
 
+  def time_to_sec(nil), do: nil
   def time_to_sec(time) do
     time
-    |> String.split(":")
+    |> String.split(":", trim: true)
     |> Enum.map(&String.to_integer/1)
     |> Enum.with_index()
     |> Enum.reduce(0, fn {val, idx}, acc ->
@@ -214,5 +215,15 @@ defmodule Sonos.Utils do
         [{beg_offset, end_offset}]
     end
     |> Enum.map(fn {b, e} -> {_offset = b, _count = e - b + 1} end)
+  end
+
+  def naive_map(xml) do
+    try do
+      xml
+      |> XmlToMap.naive_map()
+    catch
+      # this library uses erlsom under the hood which sucks and doesn't have proper error handling
+      _ -> nil
+    end
   end
 end

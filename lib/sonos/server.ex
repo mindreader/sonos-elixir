@@ -276,7 +276,7 @@ defmodule Sonos.Server do
         %State{} = state
       ) do
     Logger.info(
-      "subscribed to #{service_key} on #{room_name} with sid #{sid} and max_age #{max_age}"
+      "subscribed to #{service_key} on #{room_name} at #{Timex.now()} with sid #{sid} and max_age #{max_age}"
     )
 
     usn = usn |> Sonos.Api.short_usn()
@@ -307,7 +307,7 @@ defmodule Sonos.Server do
           # this just means next time we run a command for this service we will have to fetch it, and at
           # that time we will create a new subscription.
           Logger.warning(
-            "unable to resubscribe to #{service_key} on #{usn} (#{room_name}): #{inspect(res)}"
+            "unable to resubscribe to #{service_key} on #{usn} (#{room_name}) at #{Timex.now()}: #{inspect(res)}"
           )
 
           %State{
@@ -323,7 +323,7 @@ defmodule Sonos.Server do
         {:ok, %DateTime{} = dt} ->
           usn = usn |> Sonos.Api.short_usn()
 
-          Logger.info("resubscribed to #{service_key} on #{usn} (#{room_name})")
+          Logger.info("resubscribed to #{service_key} on #{usn} (#{room_name}) at #{Timex.now()}")
 
           %State{
             state
@@ -374,10 +374,11 @@ defmodule Sonos.Server do
       # If this ever happens I'd like to know about it so I can find out what circumstances it happens.
       Logger.warning("multiple queues for avtransport: #{inspect(vars)}")
     end
-    vars |> dbg()
 
     case vars do
-      %{"0" => %{"CurrentTrackMetaData" => %{"-val" => track_meta_data}}} ->
+      %{"0" =>
+        %{"CurrentTrackMetaData" => %{"-val" => track_meta_data}}
+        } when track_meta_data != "" ->
         devices = state.devices
         |> Map.replace_lazy(short_usn, fn %Device{} = device ->
           device |> Device.song_played(track_meta_data)

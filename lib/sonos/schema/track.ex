@@ -25,15 +25,27 @@ defmodule Sonos.Schema.Track do
     import Ecto.Changeset
 
     track
-    |> cast(attrs, [:url, :protocol_info, :duration, :creator, :album, :title, :art, :class, :id, :parent_id, :restricted])
+    |> cast(attrs, [
+      :url,
+      :protocol_info,
+      :duration,
+      :creator,
+      :album,
+      :title,
+      :art,
+      :class,
+      :item_id,
+      :parent_id,
+      :restricted
+    ])
     |> validate_required([:url, :creator, :title])
     |> unique_constraint(:url)
   end
 
-  def create_track(attrs) do
+  def replace_track(attrs) do
     %Sonos.Schema.Track{}
     |> Sonos.Schema.Track.changeset(attrs)
-    |> Sonos.Repo.insert()
+    |> Sonos.Repo.insert(on_conflict: {:replace_all_except, [:id, :inserted_at]})
   end
 
   def update_track(id, attrs) do

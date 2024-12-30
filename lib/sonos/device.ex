@@ -1,4 +1,6 @@
 defmodule Sonos.Device do
+  require Logger
+
   alias Sonos.Device.Subscription
 
   defstruct usn: nil,
@@ -20,10 +22,23 @@ defmodule Sonos.Device do
   Add a song to the device's last played songs list, ensuring that duplicates are removed.
   """
   def song_played(%Device{} = device, song) when is_binary(song) do
-    track = Sonos.Track.parse_single(song)
-    songs = [track | device.last_played_songs |> Enum.reject(&(&1.content.url == song.content.url))] |> Enum.take(15)
+    Sonos.Track.parse_single(song)
+    |> then(fn
+      nil ->
+        Logger.warning("Unable to parse track #{song}")
+        device
+      %Sonos.Track{} = track ->
+        old_track_len = device.last_played_songs |> Enum.count()
+        tracks = [track | device.last_played_songs |> Enum.reject(&(&1.content.url == track.content.url))] |> Enum.take(15)
 
-    %Device{device | last_played_songs: songs}
+        # micro optimization if the track list didn't change no new songs were added.
+        if tracks |> Enum.count() != old_track_len do
+          # track every song that has ever been played by any devices.
+          track |> Sonos.Track.persist()
+        end
+
+        %Device{device | last_played_songs: tracks}
+      end)
   end
 
   def replace_state(%Device{} = device, service, %Subscription{} = state)
