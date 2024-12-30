@@ -18,9 +18,6 @@ defmodule Sonos.Schema.Track do
     field :parent_id, :string
     field :restricted, :boolean
 
-    has_many :track_playlists, Sonos.Schema.PlaylistTrack
-    has_many :playlists, through: [:track_playlists, :playlist]
-
     timestamps()
   end
 

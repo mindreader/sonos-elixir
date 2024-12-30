@@ -19,8 +19,9 @@ defmodule Sonos.Device do
   @doc """
   Add a song to the device's last played songs list, ensuring that duplicates are removed.
   """
-  def song_played(%Device{} = device, song) do
-    songs = [song | device.last_played_songs |> Enum.reject(&(&1 == song))] |> Enum.take(15)
+  def song_played(%Device{} = device, song) when is_binary(song) do
+    track = Sonos.Track.parse_single(song)
+    songs = [track | device.last_played_songs |> Enum.reject(&(&1.content.url == song.content.url))] |> Enum.take(15)
 
     %Device{device | last_played_songs: songs}
   end

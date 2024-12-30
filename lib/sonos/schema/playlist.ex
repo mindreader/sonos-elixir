@@ -7,9 +7,6 @@ defmodule Sonos.Schema.Playlist do
     field :name, :string
     field :content, :string
 
-    has_many :playlist_tracks, Sonos.Schema.PlaylistTrack
-    has_many :tracks, through: [:playlist_tracks, :track]
-
     timestamps()
   end
 
@@ -44,6 +41,6 @@ defmodule Sonos.Schema.Playlist do
 
   def query() do
     import Ecto.Query
-    from(p in Playlist, as: :playlist)
+    from(p in Playlist, as: :playlists)
   end
 end

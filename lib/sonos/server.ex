@@ -370,6 +370,12 @@ defmodule Sonos.Server do
   end
 
   defp song_listened_to(%State{} = state, short_usn, vars) do
+    if vars |> Enum.count() > 1 do
+      # If this ever happens I'd like to know about it so I can find out what circumstances it happens.
+      Logger.warning("multiple queues for avtransport: #{inspect(vars)}")
+    end
+    vars |> dbg()
+
     case vars do
       %{"0" => %{"CurrentTrackMetaData" => %{"-val" => track_meta_data}}} ->
         devices = state.devices
