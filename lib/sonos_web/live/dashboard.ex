@@ -24,6 +24,11 @@ defmodule SonosWeb.Dashboard do
       group={@group_id}
       queue={@queue_id}
     />
+
+    <.live_component :if={@live_action == :playlists}
+      id="playlists"
+      module={SonosWeb.Dashboard.PlaylistsComponent}
+    />
     """
   end
 
@@ -61,7 +66,6 @@ defmodule SonosWeb.Dashboard do
 
   def handle_params(_params, _url, socket) do
     socket
-    |> assign(:live_action, :list)
     |> then(fn socket -> {:noreply, socket} end)
   end
 

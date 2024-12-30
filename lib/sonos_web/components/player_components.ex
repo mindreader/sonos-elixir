@@ -81,7 +81,7 @@ defmodule SonosWeb.PlayerComponents do
       </div>
         <div
           class="text-white p-1 text-xs rounded-lg mx-1 border-2 border-slate-500"
-          phx-click="view-queue"
+          phx-click="view-playlists"
           phx-target={@target}
         >
           Recently Played

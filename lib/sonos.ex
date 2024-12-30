@@ -221,7 +221,7 @@ defmodule Sonos do
     |> Stream.concat()
   end
 
-  def server_state do
+ def server_state do
     Sonos.Server |> GenServer.call(:state)
   end
 

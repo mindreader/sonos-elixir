@@ -242,11 +242,9 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
     |> then(fn socket -> {:noreply, socket} end)
   end
 
-  def handle_event("view-group", _params, socket) do
-    IO.puts("TODO REMOVE THIS EVENT")
-    # TODO when we have a more specific group view defined, we can remove this as there
-    # will no longer be a top level phx-click back to this page to ignore.
-
-    {:noreply, socket}
+  def handle_event("view-playlists", _params, socket) do
+    socket
+    |> push_patch(to: ~p"/playlists")
+    |> then(fn socket -> {:noreply, socket} end)
   end
 end
