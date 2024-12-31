@@ -554,7 +554,8 @@ defmodule Sonos.Api.Meta do
       Control options:
         * `nocache`: Do not use the cache for this call.
       """
-      def unquote(action.name)(unquote_splicing(params),opts \\ []) when is_binary(unquote(endpoint)) do
+      def unquote(action.name)(unquote_splicing(params), opts \\ [])
+          when is_binary(unquote(endpoint)) do
         unquote(validation)
       end
     end

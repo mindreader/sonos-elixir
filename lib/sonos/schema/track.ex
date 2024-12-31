@@ -6,17 +6,20 @@ defmodule Sonos.Schema.Track do
   @primary_key {:id, :binary_id, autogenerate: true}
 
   schema "tracks" do
-    field :url, :string
-    field :protocol_info, :string
-    field :duration, :integer # in seconds
-    field :creator, :string
-    field :album, :string
-    field :title, :string
-    field :art, :string
-    field :class, :string
-    field :item_id, :string
-    field :parent_id, :string
-    field :restricted, :boolean
+    field(:url, :string)
+    field(:protocol_info, :string)
+    # in seconds
+    field(:duration, :integer)
+    field(:creator, :string)
+    field(:album, :string)
+    field(:title, :string)
+    field(:art, :string)
+    field(:class, :string)
+    field(:item_id, :string)
+    field(:parent_id, :string)
+    field(:restricted, :boolean)
+
+    many_to_many(:playlists, Sonos.Schema.Playlist, join_through: Sonos.Schema.PlaylistTrack)
 
     timestamps()
   end
@@ -66,5 +69,6 @@ defmodule Sonos.Schema.Track do
     import Ecto.Query
 
     from(t in Track, as: :tracks)
+    |> join(:left, [tracks: t], p in assoc(t, :playlists), as: :playlists)
   end
 end

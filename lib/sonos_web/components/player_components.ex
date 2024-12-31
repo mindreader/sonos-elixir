@@ -10,29 +10,45 @@ defmodule SonosWeb.PlayerComponents do
   alias Phoenix.LiveView.JS
   use Gettext, backend: SonosWeb.Gettext
 
+  attr(:id, :string, required: true)
+  attr(:target, :any, required: true)
+  attr(:name, :string, required: true)
+
+  def player_playlist(assigns) do
+    ~H"""
+    <div
+      class="bg-slate-500 text-white p-2 rounded-lg border border-slate-600"
+      phx-click="view-playlist"
+      phx-target={@target}
+      phx-value-playlist_id={@id}
+    >
+      <%= @name %>
+    </div>
+    """
+  end
+
   attr(:target, :any, required: true)
   attr(:queue, :list, required: true)
-
-  # TODO mark current song!
+  attr(:show_modal, :boolean, default: false)
 
   def player_queue(assigns) do
     ~H"""
-    <.table
-        id="queue"
-        rows={@queue}
-        row_id={&elem(&1, 0)}
-        row_item={&elem(&1, 1)}
-        row_click={fn {id, _} ->
-          JS.push("view-song", target: @target, value: %{queue_id: id})
-        end}
-        row_highlight={fn {_, entry} -> entry.current end}
-    >
-      <:col :let={entry} label="Index"><%= entry.index %></:col>
-      <:col :let={entry} label="Song"><%= entry.song %></:col>
-      <:col :let={entry} label="Artist"><%= entry.artist %></:col>
-      <:col :let={entry} label="Album"><%= entry.album %></:col>
-      <:col :let={entry} label="Duration"><%= entry.track_duration %></:col>
-    </.table>
+     <.table
+         id="queue"
+         rows={@queue}
+         row_id={&elem(&1, 0)}
+         row_item={&elem(&1, 1)}
+         row_click={fn {id, _} ->
+           JS.push("view-song", target: @target, value: %{track_id: id})
+         end}
+         row_highlight={fn {_, entry} -> entry.current end}
+     >
+       <:col :let={entry} label="Index"><%= entry.index + 1 %></:col>
+       <:col :let={entry} label="Song"><%= entry.track.title %></:col>
+       <:col :let={entry} label="Artist"><%= entry.track.creator %></:col>
+       <:col :let={entry} label="Album"><%= entry.track.album %></:col>
+       <:col :let={entry} label="Duration"><%= entry.track.content.duration %></:col>
+     </.table>
     """
   end
 
@@ -67,7 +83,6 @@ defmodule SonosWeb.PlayerComponents do
     </div>
     """
   end
-
 
   def song_navigation(assigns) do
     ~H"""
@@ -254,6 +269,34 @@ defmodule SonosWeb.PlayerComponents do
       </div>
 
     </div>
+    """
+  end
+
+  attr(:id, :string, required: true)
+  attr(:target, :any, required: true)
+  attr(:song, :string)
+  attr(:artist, :string)
+
+  attr(:button_class, :string,
+    default: "p-1 rounded-lg mx-1 border-2 bg-slate-400 border-slate-500"
+  )
+
+  def song_operations_modal(assigns) do
+    ~H"""
+    <.modal
+      id={@id}
+    >
+      <div class="bg-slate-500 text-white p-2 rounded-lg border border-slate-600 text-white">
+        <div class="text-lg font-bold"><%= @song %></div>
+        <div class="mb-2 text-normal text-slate-300"><%= @artist %></div>
+        <div class="flex flex-row flex-wrap text-xs">
+          <div class={@button_class} target={@target} phx-click="play-now" phx-target={@target}>Play now</div>
+          <div class={@button_class} target={@target} phx-click="play-next" phx-target={@target}>Play next</div>
+          <div class={@button_class} target={@target} phx-click="add-to-playlist" phx-target={@target}>Add to playlist</div>
+          <div class={@button_class} target={@target} phx-click="remove-from-queue" phx-target={@target}>Remove from queue</div>
+        </div>
+      </div>
+    </.modal>
     """
   end
 end

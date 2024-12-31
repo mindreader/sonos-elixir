@@ -5,10 +5,10 @@ defmodule Sonos.Schema.PlaylistTrack do
   alias Sonos.Schema.Track
 
   schema "playlist_tracks" do
-    belongs_to :playlist, Playlist
-    belongs_to :track, Track
+    belongs_to(:playlist, Playlist)
+    belongs_to(:track, Track)
 
-    field :position, :integer
+    field(:position, :integer)
 
     timestamps()
   end
@@ -30,6 +30,9 @@ defmodule Sonos.Schema.PlaylistTrack do
     import Ecto.Query
 
     from(pt in __MODULE__, as: :playlist_tracks)
-    |> join(:inner, [playlist_tracks: pt], p in Playlist, on: pt.playlist_id == p.id, as: :playlists)
+    |> join(:inner, [playlist_tracks: pt], p in Playlist,
+      on: pt.playlist_id == p.id,
+      as: :playlists
+    )
   end
 end

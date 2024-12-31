@@ -4,9 +4,22 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
   @impl true
   def render(assigns) do
     ~H"""
+    <div>
+      <div id="group-view-queue">
+        <.player_queue
+          queue={@queue}
+          target={@myself}
+          show_modal={@show_modal}
+        />
 
-    <div id="group-view-queue">
-      <.player_queue queue={@queue} target={@myself}/>
+      </div>
+
+      <.song_operations_modal
+        id="view-song-modal"
+        target={@myself}
+        song={@viewing_song && @viewing_song.track.title}
+        artist={@viewing_song && @viewing_song.track.creator}
+      />
     </div>
 
     """
@@ -20,7 +33,9 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
       group: nil,
       number_of_tracks: nil,
       queue_position: nil,
-      queue_index: nil
+      queue_index: nil,
+      show_modal: false,
+      viewing_song: nil
     )
     |> then(fn socket -> {:ok, socket} end)
   end
@@ -77,6 +92,7 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
       socket
       |> assign(:queue_position, queue_position)
       |> assign(:number_of_tracks, num_tracks)
+      |> assign(:viewing_song, nil)
 
     {:ok, _socket} =
       if old_queue_position != queue_position || old_number_of_tracks != num_tracks do
@@ -98,22 +114,24 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
 
     leader = socket.assigns.group.members |> hd |> Map.get(:device)
 
+    # TODO remove this contiguous ranges stuff, the sonos queue doesn't even cycle the way
+    # I thought it did, so we might as well just cap the start and end indexes instead of
+    # doing this wraparound stuff. It might still be worth doing if we are in
+    # continue / repeat mode, though...
     queue =
       if queue_position && num_tracks do
-        Sonos.Utils.contiguous_ranges_around(queue_position, num_tracks,
-          side_count: 3
-        )
+        Sonos.Utils.contiguous_ranges_around(queue_position, num_tracks, side_count: 3)
       else
         []
       end
       |> Enum.map(fn {offset, count} ->
         leader
         |> Sonos.stream_queue(socket.assigns.queue_index, offset: offset, per_call: count)
-        |> Stream.map(fn entry ->
+        |> Stream.map(fn %{index: index, track: %Sonos.Track{}} = entry ->
           entry =
             entry
-            |> Map.put(:current, entry.index == queue_position)
-            |> Map.put(:index, "#{entry.index + 1}")
+            |> Map.put(:current, index == queue_position)
+            |> Map.put(:index, index)
 
           {entry.id, entry}
         end)
@@ -141,27 +159,72 @@ defmodule SonosWeb.Dashboard.GroupViewQueueComponent do
   end
 
   @impl true
-  def handle_event("view-song", %{"queue_id" => queue_item_id}, socket) do
-    _queue = socket.assigns.queue |> Enum.find(fn {id, _} -> id == queue_item_id end)
+  def handle_event("view-song", %{"track_id" => track_id}, socket) do
+    socket.assigns.queue
+    |> Enum.find(fn {id, _} -> id == track_id end)
+    |> then(fn
+      nil ->
+        socket
+
+      {_, song} ->
+        socket
+        |> push_event("show-modal", %{id: "view-song-modal"})
+        |> assign(:viewing_song, song)
+    end)
+    |> then(fn socket -> {:noreply, socket} end)
+  end
+
+  def handle_event("play-now", _, socket) do
+    IO.puts("play-now #{socket.assigns.viewing_song.track.title}")
+    track_id = socket.assigns.viewing_song.index
+
+    leader = socket.assigns.group.members |> hd |> Map.get(:device)
+
+    leader
+    |> Sonos.seek_queue_position(track_id)
 
     {:noreply, socket}
   end
 
-  # @impl true
-  # def handle_event("move_up", %{"index" => index}, socket) do
-  #   # TODO: Implement move up functionality
-  #   {:noreply, socket}
-  # end
+  # This is done in the app by adding the song you want to the queue, then seeking to it.
+  # if it is already in the queue it will just have the song in the queue twice
+  # Not really sure that this belongs here, it might be better a part of a music service
+  def handle_event("play-next", _, socket) do
+    IO.puts("play-next #{socket.assigns.viewing_song.track.title}")
+    index = socket.assigns.viewing_song.index
 
-  # @impl true
-  # def handle_event("move_down", %{"index" => index}, socket) do
-  #   # TODO: Implement move down functionality
-  #   {:noreply, socket}
-  # end
+    leader = socket.assigns.group.members |> hd |> Map.get(:device)
 
-  # @impl true
-  # def handle_event("remove", %{"index" => index}, socket) do
-  #   # TODO: Implement remove functionality
-  #   {:noreply, socket}
-  # end
+    track =
+      leader
+      |> Sonos.stream_queue(0, per_call: 15)
+      |> Stream.filter(fn entry ->
+        entry.index == index
+      end)
+      |> Enum.take(1)
+      |> List.first()
+
+    # TODO FIXME this plays it immediately, we want to play it next, so probably the right
+    # way is to remove it from the queue and then add it just after the current song.
+    track |> Sonos.seek_queue_position(track.index)
+
+    {:noreply, socket}
+  end
+
+  def handle_event("add-to-playlist", _, socket) do
+    IO.puts("add-to-playlist #{socket.assigns.viewing_song.track.title}")
+    {:noreply, socket}
+  end
+
+  def handle_event("remove-from-queue", _, socket) do
+    track_id = socket.assigns.viewing_song.index
+    leader = socket.assigns.group.members |> hd |> Map.get(:device)
+
+    leader |> Sonos.remove_from_queue(track_id)
+
+    socket
+    |> then(fn socket -> {:noreply, socket} end)
+  end
+
+  # TODO FIXME all of these need to close the modal when they are done.
 end

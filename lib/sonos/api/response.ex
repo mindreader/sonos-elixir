@@ -15,28 +15,29 @@ defmodule Sonos.Api.Response do
       |> Enum.map(fn {name, val} ->
         output_type = output_types |> Map.get(name, nil)
 
-        parsed = case {command, name, output_type} do
-          {_, :zone_group_state, :string} ->
-            val |> zone_group_state_parse()
+        parsed =
+          case {command, name, output_type} do
+            {_, :zone_group_state, :string} ->
+              val |> zone_group_state_parse()
 
-          {_, :preset_name_list, :string} ->
-            val |> String.split(",")
+            {_, :preset_name_list, :string} ->
+              val |> String.split(",")
 
-          {_, :track_meta_data, :string} ->
-            val |> Sonos.Track.parse_single()
+            {_, :track_meta_data, :string} ->
+              val |> Sonos.Track.parse_single()
 
-          {:browse, :result, :string} ->
-            val |> browse_result_parse()
+            {:browse, :result, :string} ->
+              val |> browse_result_parse()
 
-          {_, _, :boolean} ->
-            val["-val"] == "1"
+            {_, _, :boolean} ->
+              val["-val"] == "1"
 
-          # {_, x} when x in [:ui1, :ui2, :ui4, :i1, :i2, :i4] ->
-          #   {name, val["-val"]}
+            # {_, x} when x in [:ui1, :ui2, :ui4, :i1, :i2, :i4] ->
+            #   {name, val["-val"]}
 
-          _ ->
-            val
-        end
+            _ ->
+              val
+          end
 
         {name, parsed, val}
       end)
@@ -85,7 +86,6 @@ defmodule Sonos.Api.Response do
     end)
   end
 
-
   # add_uri(
   # endpoint,
   # 0,
@@ -99,53 +99,7 @@ defmodule Sonos.Api.Response do
   # Sonos.Api.Play1.MediaRenderer.Queue.add_uri(office.endpoint, 0, 82, uri, xml, 0, false)
 
   def browse_result_parse(val) do
-# <?xml version="1.0"?>
-# <DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns:r="urn:schemas-rinconnetworks-com:metadata-1-0/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
-#   <item id="Q:0/1" parentID="Q:0" restricted="true">
-#     <res protocolInfo="sonos.com-http:*:application/x-mpegURL:*" duration="0:02:45">x-sonosapi-hls-static:ALkSOiE3xqUOLndxRQEeZbHuf_V5gkgjj7nx1tjFu40duj-w?sid=284&amp;flags=65544&amp;sn=3</res>
-#     <upnp:albumArtURI>/getaa?s=1&amp;u=x-sonosapi-hls-static%3aALkSOiE3xqUOLndxRQEeZbHuf_V5gkgjj7nx1tjFu40duj-w%3fsid%3d284%26flags%3d65544%26sn%3d3</upnp:albumArtURI>
-#     <dc:title>Suffocate</dc:title>
-#     <upnp:class>object.item.audioItem.musicTrack</upnp:class>
-#     <dc:creator>Knocked Loose</dc:creator>
-#     <upnp:album>You Won't Go Before You're Supposed To</upnp:album>
-#     <r:tags>1</r:tags>
-#   </item>
-#   <item id="Q:0/2" parentID="Q:0" restricted="true">
-#     <res protocolInfo="sonos.com-http:*:application/x-mpegURL:*" duration="0:03:17">x-sonosapi-hls-static:ALkSOiHF8kIg-gf4zaWMRqMvlyOhIL5MDbuhjd4UbOUCyN88?sid=284&amp;flags=65544&amp;sn=3</res>
-#     <upnp:albumArtURI>/getaa?s=1&amp;u=x-sonosapi-hls-static%3aALkSOiHF8kIg-gf4zaWMRqMvlyOhIL5MDbuhjd4UbOUCyN88%3fsid%3d284%26flags%3d65544%26sn%3d3</upnp:albumArtURI>
-#     <dc:title>Ronald</dc:title>
-#     <upnp:class>object.item.audioItem.musicTrack</upnp:class>
-#     <dc:creator>Falling In Reverse, Tech N9ne, Alex Terrible</dc:creator>
-#     <upnp:album>Popular Monster</upnp:album>
-#     <r:tags>1</r:tags>
-#   </item>
-# </DIDL-Lite>
-
-
-    val
-    |> IO.inspect(label: "val")
-    |> XmlToMap.naive_map()
-    |> then(fn json ->
-      json["DIDL-Lite"]["item"]
-      |> Sonos.Utils.coerce_to_list()
-      |> Enum.map(fn item ->
-        # this is not useful?
-        # queue_id = item["-id"]
-
-        item = item["#content"]
-        res = item["res"]
-        track_duration = res["-duration"]
-
-        %{
-          class: item["upnp:class"],
-          artist: item["dc:creator"],
-          song: item["dc:title"],
-          album: item["upnp:album"],
-          art: item["upnp:albumArtURI"],
-          track_duration: track_duration
-        }
-      end)
-    end)
+    val |> Sonos.Track.parse_list()
   end
 
   #        "RenderingControl:1" ->

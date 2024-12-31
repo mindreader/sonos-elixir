@@ -26,8 +26,8 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         target={@myself}
         name={@group.name}
         playing={@group.playing}
-        shuffle={Sonos.shuffle_enabled?(@group.play_state)}
-        continue={Sonos.continue_enabled?(@group.play_state)}
+        shuffle={@group.shuffle}
+        continue={@group.continue}
         volume={@group.volume}
       />
     </div>
@@ -62,7 +62,6 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
       playing = leader |> Sonos.is_playing?()
       play_state = leader |> Sonos.get_play_state()
 
-
       name = leader.room_name
 
       name =
@@ -79,8 +78,8 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
 
       track_duration = audio_info[:track_duration]
       track_meta_data = audio_info[:track_meta_data]
-      song = track_meta_data.song
-      artist = track_meta_data.artist
+      song = track_meta_data.title
+      artist = track_meta_data.creator
       album = track_meta_data.album
       art = leader.endpoint <> track_meta_data.art
 
@@ -99,6 +98,8 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
         members: group.members,
         playing: playing,
         play_state: play_state,
+        shuffle: Sonos.shuffle_enabled?(play_state),
+        continue: Sonos.continue_enabled?(play_state),
         volume: volume,
         artist: artist,
         album: album,
@@ -244,7 +245,7 @@ defmodule SonosWeb.Dashboard.GroupViewComponent do
 
   def handle_event("view-playlists", _params, socket) do
     socket
-    |> push_patch(to: ~p"/playlists")
+    |> push_patch(to: ~p"/playlist")
     |> then(fn socket -> {:noreply, socket} end)
   end
 end

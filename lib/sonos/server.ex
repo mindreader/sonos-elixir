@@ -103,16 +103,17 @@ defmodule Sonos.Server do
       when is_binary(service) do
     short_usn = usn |> Sonos.Api.short_usn()
 
-
     state = state |> merge_state(short_usn, service, vars)
 
     Phoenix.PubSub.broadcast(Sonos.PubSub, "Sonos.Event", {:service_updated, short_usn, service})
 
-
     # we keep track of the last song listened to for every device
-    state = if service == "AVTransport:1" do
-      state |> song_listened_to(short_usn, vars)
-    else state end
+    state =
+      if service == "AVTransport:1" do
+        state |> song_listened_to(short_usn, vars)
+      else
+        state
+      end
 
     {:noreply, %State{} = state}
   end
@@ -125,7 +126,6 @@ defmodule Sonos.Server do
     state = refresh_avtransport(state)
 
     device |> Device.identify_task()
-
 
     {:noreply, %State{} = state}
   end
@@ -360,13 +360,14 @@ defmodule Sonos.Server do
   # This is the only service that we need to ensure is always up to date, as it is the only one that
   # is needed to know what tracks are being played by a device, which is something we have to track ourselves.
   defp refresh_avtransport(%State{} = state) do
-    %State{} = state.usn_by_endpoint
-    |> Enum.reduce(state, fn {endpoint, usn}, state ->
-      api = state.devices[usn].api
-      service = Module.concat(api, MediaRenderer.AVTransport)
-      {:noreply, state} = handle_cast({:cache_service, endpoint, service}, state)
-      state
-    end)
+    %State{} =
+      state.usn_by_endpoint
+      |> Enum.reduce(state, fn {endpoint, usn}, state ->
+        api = state.devices[usn].api
+        service = Module.concat(api, MediaRenderer.AVTransport)
+        {:noreply, state} = handle_cast({:cache_service, endpoint, service}, state)
+        state
+      end)
   end
 
   defp song_listened_to(%State{} = state, short_usn, vars) do
@@ -376,13 +377,13 @@ defmodule Sonos.Server do
     end
 
     case vars do
-      %{"0" =>
-        %{"CurrentTrackMetaData" => %{"-val" => track_meta_data}}
-        } when track_meta_data != "" ->
-        devices = state.devices
-        |> Map.replace_lazy(short_usn, fn %Device{} = device ->
-          device |> Device.song_played(track_meta_data)
-        end)
+      %{"0" => %{"CurrentTrackMetaData" => %{"-val" => track_meta_data}}}
+      when track_meta_data != "" ->
+        devices =
+          state.devices
+          |> Map.replace_lazy(short_usn, fn %Device{} = device ->
+            device |> Device.song_played(track_meta_data)
+          end)
 
         %State{state | devices: devices}
 

@@ -18,6 +18,12 @@ defmodule Sonos.Device do
   alias __MODULE__
   require Logger
 
+  def uuid(%Device{} = device) do
+    device.usn
+    |> String.trim_trailing("::urn:schemas-upnp-org:device:ZonePlayer:1")
+    |> String.trim_leading("uuid:")
+  end
+
   @doc """
   Add a song to the device's last played songs list, ensuring that duplicates are removed.
   """
@@ -27,18 +33,26 @@ defmodule Sonos.Device do
       nil ->
         Logger.warning("Unable to parse track #{song}")
         device
+
       %Sonos.Track{} = track ->
         old_track_len = device.last_played_songs |> Enum.count()
-        tracks = [track | device.last_played_songs |> Enum.reject(&(&1.content.url == track.content.url))] |> Enum.take(15)
 
-        # micro optimization if the track list didn't change no new songs were added.
+        Logger.info(
+          "Played song #{track.creator} - #{track.title} on device #{device.usn} (#{device.room_name})"
+        )
+
+        tracks = [
+          track | device.last_played_songs |> Enum.reject(&(&1.content.url == track.content.url))
+        ]
+
+        # micro optimization if the track list didn't change in length then no new songs were played for sure.
         if tracks |> Enum.count() != old_track_len do
           # track every song that has ever been played by any devices.
           track |> Sonos.Track.persist()
         end
 
-        %Device{device | last_played_songs: tracks}
-      end)
+        %Device{device | last_played_songs: tracks |> Enum.take(15)}
+    end)
   end
 
   def replace_state(%Device{} = device, service, %Subscription{} = state)
@@ -75,7 +89,7 @@ defmodule Sonos.Device do
 
   def call(%Sonos.Device{} = device, service, function, inputs)
       when is_atom(service) and is_atom(function) do
-    Module.concat([device.api, service]) |> apply(function, [device.endpoint | inputs ])
+    Module.concat([device.api, service]) |> apply(function, [device.endpoint | inputs])
   end
 
   def subscribe(%Sonos.Device{} = device, service, event_address, opts \\ [])
@@ -105,7 +119,7 @@ defmodule Sonos.Device do
     device_state =
       device.state
       |> Map.replace_lazy(service, fn %Subscription{} = state ->
-        %Subscription{state | subscription_id: sid, max_age: max_age}
+        state |> Subscription.subscribed(sid, max_age, Timex.now())
       end)
 
     %Device{device | state: device_state}

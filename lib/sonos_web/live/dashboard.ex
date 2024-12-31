@@ -29,6 +29,12 @@ defmodule SonosWeb.Dashboard do
       id="playlists"
       module={SonosWeb.Dashboard.PlaylistsComponent}
     />
+
+    <.live_component :if={@live_action == :playlist}
+      id="playlist"
+      module={SonosWeb.Dashboard.PlaylistListViewComponent}
+      playlist={@playlist_id}
+    />
     """
   end
 
@@ -42,6 +48,7 @@ defmodule SonosWeb.Dashboard do
     socket
     |> assign(:group_id, nil)
     |> assign(:queue_id, nil)
+    |> assign(:playlist_id, nil)
     |> then(fn socket -> {:ok, socket} end)
   end
 
@@ -53,6 +60,17 @@ defmodule SonosWeb.Dashboard do
     |> assign(:live_action, :queue)
     |> assign(:group_id, group_id)
     |> assign(:queue_id, queue_index)
+    |> then(fn socket -> {:noreply, socket} end)
+  end
+
+  @impl true
+  def handle_params(%{"playlist" => playlist_id} = params, _url, socket) do
+    params
+    |> dbg()
+
+    socket
+    |> assign(:live_action, :playlist)
+    |> assign(:playlist_id, playlist_id |> dbg)
     |> then(fn socket -> {:noreply, socket} end)
   end
 

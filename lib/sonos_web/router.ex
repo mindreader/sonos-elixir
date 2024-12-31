@@ -18,9 +18,19 @@ defmodule SonosWeb.Router do
     pipe_through(:browser)
 
     live("/", Dashboard, :list)
-    live("/group/:group", Dashboard, :group)
-    live("/group/:group/queue/:queue", Dashboard, :queue)
-    live("/playlists", Dashboard, :playlists)
+    # TODO remove references in code
+    live("/groups", Dashboard, :list)
+
+    scope "/group" do
+      live("/", Dashboard, :list)
+      live("/:group", Dashboard, :group)
+      live("/:group/queue/:queue", Dashboard, :queue)
+    end
+
+    scope "/playlist" do
+      live("/", Dashboard, :playlists)
+      live("/:playlist", Dashboard, :playlist)
+    end
   end
 
   # Other scopes may use custom stacks.

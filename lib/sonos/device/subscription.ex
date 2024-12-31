@@ -6,6 +6,7 @@ defmodule Sonos.Device.Subscription do
             timeout: nil,
             max_age: nil,
             last_updated_at: nil,
+            last_subscribed_at: nil,
             resubscribe_last_sent_at: nil
 
   def new(opts \\ []) do
@@ -27,6 +28,12 @@ defmodule Sonos.Device.Subscription do
 
       # this is the last time we saw a message from them for this device.
       last_updated_at: Timex.now(),
+
+      # this is when we last subscribed or updated our subscription.
+      last_subscribed_at: nil,
+
+      # if we sent a resubscribe, this is the last time it happened, which is useful
+      # to know while we are waiting for the resub response.
       resubscribe_last_sent_at: nil
     }
   end
@@ -56,21 +63,33 @@ defmodule Sonos.Device.Subscription do
     %Subscription{state | state: substate, last_updated_at: Timex.now()}
   end
 
+  def subscribed(%Subscription{} = state, subscription_id, max_age, %DateTime{} = dt) do
+    %Subscription{
+      state
+      | subscription_id: subscription_id,
+        max_age: max_age,
+        last_subscribed_at: dt
+    }
+  end
+
   def resubscribe_sent(%Subscription{} = state, %DateTime{} = dt) do
     %Subscription{state | resubscribe_last_sent_at: dt}
   end
 
   def resubscribed(%Subscription{} = state, %DateTime{} = dt) do
-    %Subscription{state | last_updated_at: dt}
+    %Subscription{state | last_subscribed_at: dt}
   end
 
   def expired?(%Subscription{} = state) do
-    state.last_updated_at |> Timex.shift(seconds: state.max_age) |> Timex.before?(Timex.now())
+    state.last_subscribed_at &&
+      state.last_subscribed_at
+      |> Timex.shift(seconds: state.max_age)
+      |> Timex.before?(Timex.now())
   end
 
   def expiring?(%Subscription{} = state) do
     half_max_age = state.max_age |> div(2)
-    state.last_updated_at |> Timex.shift(seconds: half_max_age) |> Timex.before?(Timex.now())
+    state.last_subscribed_at |> Timex.shift(seconds: half_max_age) |> Timex.before?(Timex.now())
   end
 
   @doc """

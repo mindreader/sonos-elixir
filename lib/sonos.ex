@@ -113,6 +113,59 @@ defmodule Sonos do
     device |> Sonos.Device.call(MediaRenderer.AVTransport, :previous, [0])
   end
 
+  def seek_queue_position(%Sonos.Device{} = device, position) when is_integer(position) do
+    # sonos uses 1-based indexing for tracks
+    device
+    |> Sonos.Device.call(MediaRenderer.AVTransport, :seek, [0, :TRACK_NR, "#{position + 1}"])
+  end
+
+  def seek_absolute_position(%Sonos.Device{} = device, seconds) when is_integer(seconds) do
+    position = Sonos.Utils.sec_to_time(seconds)
+    device |> Sonos.Device.call(MediaRenderer.AVTransport, :seek, [0, :REL_TIME, position])
+  end
+
+  def move_track_in_queue(%Sonos.Device{} = device, track_id, new_position, number_of_tracks \\ 1) do
+    # TODO this is entirely untested, and I have no idea what would happen if shuffle is enabled.
+    device
+    |> Sonos.Device.call(MediaRenderer.Queue, :reorder_tracks, [
+      0,
+      track_id,
+      number_of_tracks,
+      new_position
+    ])
+  end
+
+  def set_up_queue(%Sonos.Device{} = _device, _queue_id) do
+    # TODO
+    # Set queue with Sonos.Api.Play1.MediaRender.Queue.add_uri ... etc
+
+    # uid = device |> Sonos.Device.uuid()
+    # queue = "x-rincon-queue:#{uid}##0"
+
+    # device |> Sonos.Device.call(MediaRenderer.AVTransport, :set_av_transport_uri, [0, queue, ""])
+    # device |> play() (perhaps)
+  end
+
+  def remove_from_queue(%Sonos.Device{} = device, track_id_start, number_of_tracks \\ 1) do
+    # browse one song from queue to get the queue updated_id (one song minimum on that call)
+    device
+    |> Sonos.Device.call(MediaRenderer.Queue, :browse, [0, 0, 1])
+    |> then(fn {:ok, %Sonos.Api.Response{outputs: outputs}} -> outputs[:update_id] end)
+    |> then(fn
+      nil ->
+        :ok
+
+      update_id when is_integer(update_id) ->
+        device
+        |> Sonos.Device.call(MediaRenderer.Queue, :remove_track_range, [
+          0,
+          update_id,
+          track_id_start,
+          number_of_tracks
+        ])
+    end)
+  end
+
   def shuffle_enabled?(play_state) when is_atom(play_state) do
     play_state in [:shuffle, :shuffle_norepeat, :shuffle_repeat_one]
   end
@@ -173,7 +226,8 @@ defmodule Sonos do
     # circumventing the cache, which is the only way to get current track position info.
     nocache = Keyword.get(opts, :nocache, false)
 
-    device |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0, [nocache: nocache]])
+    device
+    |> Sonos.Device.call(MediaRenderer.AVTransport, :get_position_info, [0, [nocache: nocache]])
   end
 
   @doc """
@@ -203,9 +257,7 @@ defmodule Sonos do
               outputs[:result]
               |> Stream.with_index(offset)
               |> Enum.map(fn {item, index} ->
-                item
-                |> Map.put(:id, "track-#{index}")
-                |> Map.put(:index, index)
+                %{id: "track-#{index}", index: index, track: item}
               end)
 
             next_offset = offset + per_call
@@ -221,7 +273,7 @@ defmodule Sonos do
     |> Stream.concat()
   end
 
- def server_state do
+  def server_state do
     Sonos.Server |> GenServer.call(:state)
   end
 

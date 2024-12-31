@@ -46,6 +46,12 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 window.addEventListener("phx:click-ignore", info => {})
+window.addEventListener("phx:show-modal", info => {
+   let el = document.getElementById(info.detail.id)
+   if (el) {
+    liveSocket.execJS(el, el.getAttribute("data-show-modal"))
+   }
+ })
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

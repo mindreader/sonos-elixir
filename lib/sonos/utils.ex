@@ -158,17 +158,23 @@ defmodule Sonos.Utils do
   end
 
   def time_to_sec(nil), do: nil
+
   def time_to_sec(time) do
     time
     |> String.split(":", trim: true)
     |> Enum.map(&String.to_integer/1)
     |> Enum.with_index()
     |> Enum.reduce(0, fn {val, idx}, acc ->
-      multiplier = case idx do
-        0 -> 3600  # hours
-        1 -> 60    # minutes
-        2 -> 1     # seconds
-      end
+      multiplier =
+        case idx do
+          # hours
+          0 -> 3600
+          # minutes
+          1 -> 60
+          # seconds
+          2 -> 1
+        end
+
       acc + val * multiplier
     end)
   end

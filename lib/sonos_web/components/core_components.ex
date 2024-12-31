@@ -40,6 +40,9 @@ defmodule SonosWeb.CoreComponents do
   attr(:show, :boolean, default: false)
   attr(:on_cancel, JS, default: %JS{})
   slot(:inner_block, required: true)
+  attr(:bg_main, :string, default: "bg-slate-700/60")
+  attr(:bg_outer, :string, default: "bg-slate-300")
+  attr(:bg_inner, :string, default: "bg-white")
 
   def modal(assigns) do
     ~H"""
@@ -48,9 +51,10 @@ defmodule SonosWeb.CoreComponents do
       phx-mounted={@show && show_modal(@id)}
       phx-remove={hide_modal(@id)}
       data-cancel={JS.exec(@on_cancel, "phx-remove")}
+      data-show-modal={show_modal(@id)}
       class="relative z-50 hidden"
     >
-      <div id={"#{@id}-bg"} class="bg-zinc-50/90 fixed inset-0 transition-opacity" aria-hidden="true" />
+      <div id={"#{@id}-bg"} class={[@bg_main, "fixed inset-0 transition-opacity"]} aria-hidden="true" />
       <div
         class="fixed inset-0 overflow-y-auto"
         aria-labelledby={"#{@id}-title"}
@@ -66,9 +70,9 @@ defmodule SonosWeb.CoreComponents do
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-white p-14 shadow-lg ring-1 transition"
+              class={[@bg_outer, "shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl p-8 shadow-lg ring-1 transition"]}
             >
-              <div class="absolute top-6 right-5">
+              <div class="absolute top-2 right-2">
                 <button
                   phx-click={JS.exec("data-cancel", to: "##{@id}")}
                   type="button"

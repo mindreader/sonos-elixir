@@ -3,7 +3,7 @@ defmodule Sonos.Playlist do
 
   alias Sonos.Track
 
-  defstruct tracks: []
+  defstruct name: nil, tracks: nil
 
   @doc """
   Streams playlists.
@@ -38,7 +38,34 @@ defmodule Sonos.Playlist do
     |> order_by(^order_by)
   end
 
-  def stream_playlists(opts \\ []) do
+  def from_schema(%Sonos.Schema.Playlist{} = playlist) do
+    playlist = playlist |> Sonos.Repo.preload([:tracks])
+
+    %Playlist{
+      name: playlist.name,
+      tracks:
+        playlist.tracks |> Enum.sort_by(& &1.content.position) |> Enum.map(&Track.from_schema/1)
+    }
+  end
+
+  def get(id) do
+    id
+    |> Sonos.Schema.Playlist.get_playlist()
+    |> from_schema()
+  end
+
+  def update(%Playlist{} = playlist, attrs) do
+    playlist
+    |> Sonos.Schema.Playlist.update_playlist(attrs)
+    |> from_schema()
+  end
+
+  def delete(id) do
+    id
+    |> Sonos.Schema.Playlist.delete_playlist()
+  end
+
+  def stream(opts \\ []) do
     playlist_query(opts)
     |> Sonos.Repo.stream()
   end
