@@ -165,6 +165,9 @@ defmodule Sonos.Device do
         {:ok, %HTTPoison.Response{} = resp} ->
           {:error, {:unable_to_resubscribe, resp}}
 
+        {:error, err} ->
+          {:error, {:unable_to_resubscribe, err}}
+
         err ->
           err
       end)

@@ -346,6 +346,12 @@ defmodule Sonos.Server do
     {:noreply, %State{} = state}
   end
 
+  def handle_info({_ref, {:identified, {:error, {:cannot_identify, err}}}}, %State{} = state) do
+    Logger.warning("could not identify #{inspect(err)}")
+
+    {:noreply, %State{} = state}
+  end
+
   def handle_info({:DOWN, ref, :process, _pid, _reason}, state) do
     if state.ssdp_server == ref do
       # our subscription to SSDP has died, so we need to restart to renew it.
